@@ -36,8 +36,8 @@ exports.register = async (req, res) => {
         if (err.code === '23505') { // unique violation
             return res.status(400).json({ error: 'Email already exists' });
         }
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
+        console.error("Register Error:", err);
+        res.status(500).json({ error: err.message || 'Server error' });
     }
 };
 
