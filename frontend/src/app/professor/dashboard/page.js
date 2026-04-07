@@ -40,6 +40,8 @@ export default function ProfessorDashboard() {
     const [isTracking, setIsTracking] = useState(false);
     const [locationError, setLocationError] = useState('');
     const trackingIntervalRef = useRef(null);
+    const trackingOriginRef = useRef('manual');
+    const lectureSessionRef = useRef(null);
 
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -149,7 +151,8 @@ export default function ProfessorDashboard() {
         setQuizForm({ ...quizForm, questions: newQs });
     };
 
-    const startTrackingSequence = () => {
+    const startTrackingSequence = (origin = 'manual') => {
+        trackingOriginRef.current = origin;
         if (!navigator.geolocation) {
             setLocationError('Geolocation not supported');
             return;
@@ -160,11 +163,13 @@ export default function ProfessorDashboard() {
             setIsTracking(true);
             const { latitude, longitude } = pos.coords;
             try {
-                await api.post('/attendance/professor/start', { subject_id: selectedCourse.id, latitude, longitude });
+                const { data } = await api.post('/attendance/professor/start', { subject_id: selectedCourse.id, latitude, longitude });
+                lectureSessionRef.current = data.lecture_session_id;
+                
                 // Start pinging
                 trackingIntervalRef.current = setInterval(() => {
                     navigator.geolocation.getCurrentPosition(async (p) => {
-                        await api.post('/attendance/professor/ping', { subject_id: selectedCourse.id, latitude: p.coords.latitude, longitude: p.coords.longitude });
+                        await api.post('/attendance/professor/ping', { lecture_session_id: lectureSessionRef.current, latitude: p.coords.latitude, longitude: p.coords.longitude });
                     });
                 }, 60000);
             } catch (err) {
@@ -182,7 +187,7 @@ export default function ProfessorDashboard() {
         if (trackingIntervalRef.current) clearInterval(trackingIntervalRef.current);
         setIsTracking(false);
         try {
-            await api.post('/attendance/professor/complete', { subject_id: selectedCourse.id });
+            await api.post('/attendance/professor/complete', { lecture_session_id: lectureSessionRef.current });
         } catch (err) {
             console.error('Failed to stop tracking', err);
         }
@@ -196,37 +201,7 @@ export default function ProfessorDashboard() {
         fetchClassInstances();
     }, [selectedCourse?.id, activeTab]);
 
-    useEffect(() => {
-        if (!selectedCourse?.id || activeTab !== 'attendance') return;
-        
-        const checkScheduleLoop = setInterval(() => {
-            const now = new Date();
-            const todayStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}`;
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-            let todayClass = classInstances.find(c => c.date === todayStr && c.status !== 'cancelled');
-            if (!todayClass && schedules.length > 0) {
-                const dayOfWeek = now.getDay();
-                todayClass = schedules.find(s => s.day_of_week === dayOfWeek);
-            }
-
-            if (todayClass) {
-                const [sh, sm] = todayClass.start_time.split(':').map(Number);
-                const [eh, em] = todayClass.end_time.split(':').map(Number);
-                const startMins = sh * 60 + sm;
-                const endMins = eh * 60 + em;
-
-                // Start tracking if 2 mins past start time and before end time
-                if (!isTracking && currentMinutes >= startMins + 2 && currentMinutes < endMins) {
-                    startTrackingSequence();
-                } else if (isTracking && currentMinutes >= endMins) {
-                    stopTrackingSequence();
-                }
-            }
-        }, 15000); // Check every 15 seconds
-
-        return () => clearInterval(checkScheduleLoop);
-    }, [selectedCourse?.id, activeTab, classInstances, schedules, isTracking]);
 
     // --- Schedule management functions ---
     const fetchSchedules = async () => {

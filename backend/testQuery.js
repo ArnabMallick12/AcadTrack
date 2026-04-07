@@ -1,0 +1,1 @@
+const db = require('./src/config/db'); async function test() { try { console.log('SESSIONS:', (await db.query('SELECT * FROM lecture_sessions ORDER BY start_time DESC LIMIT 5')).rows); console.log('PINGS:', (await db.query('SELECT * FROM professor_location_pings ORDER BY timestamp DESC LIMIT 5')).rows); } catch (e) { console.error(e); } finally { process.exit(); } }; test();

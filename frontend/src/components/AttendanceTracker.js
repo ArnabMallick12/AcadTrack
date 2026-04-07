@@ -10,6 +10,7 @@ export default function AttendanceTracker({ subjectId }) {
     const [timer, setTimer] = useState(0);
     const [todayClasses, setTodayClasses] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [distanceStr, setDistanceStr] = useState(null);
 
     // Fetch today's class schedule
     useEffect(() => {
@@ -51,6 +52,11 @@ export default function AttendanceTracker({ subjectId }) {
             try {
                 const { data } = await api.post('/attendance/start', { subject_id: subjectId, latitude, longitude });
                 setSessionId(data.session_id);
+                if (data.current_distance !== null && data.current_distance !== undefined) {
+                    setDistanceStr(`${Math.round(data.current_distance)}m`);
+                } else {
+                    setDistanceStr('Awaiting Prof');
+                }
                 setStatus('active');
             } catch (err) {
                 alert('Failed to start session');
@@ -79,9 +85,16 @@ export default function AttendanceTracker({ subjectId }) {
             
             // Heartbeat every 30s
             pinger = setInterval(() => {
-                navigator.geolocation.getCurrentPosition((position) => {
+                navigator.geolocation.getCurrentPosition(async (position) => {
                     const { latitude, longitude } = position.coords;
-                    api.post('/attendance/ping', { session_id: sessionId, latitude, longitude });
+                    try {
+                        const { data } = await api.post('/attendance/ping', { session_id: sessionId, latitude, longitude });
+                        if (data.current_distance !== null && data.current_distance !== undefined) {
+                            setDistanceStr(`${Math.round(data.current_distance)}m`);
+                        }
+                    } catch (e) {
+                        console.error('Ping failed');
+                    }
                 });
             }, 30000);
         }
@@ -208,9 +221,19 @@ export default function AttendanceTracker({ subjectId }) {
                                 </button>
                             )}
                             {status === 'active' && (
-                                <button onClick={stopSession} className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors">
-                                    <Square size={18}/> End Session
-                                </button>
+                                <div className="flex items-center gap-4">
+                                    {distanceStr && (
+                                        <div className="flex flex-col items-end pr-4 border-r border-gray-200">
+                                            <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Distance</span>
+                                            <span className={`font-mono font-bold text-lg leading-tight ${distanceStr.includes('Awaiting') || distanceStr === 'nullm' ? 'text-amber-500' : parseInt(distanceStr) <= 30 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                                {distanceStr}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <button onClick={stopSession} className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors border border-red-700 shadow-sm">
+                                        <Square fill="currentColor" size={18}/> End
+                                    </button>
+                                </div>
                             )}
                         </div>
                     </div>

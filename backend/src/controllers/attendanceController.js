@@ -14,6 +14,27 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
     return R * c; // Distance in meters
 }
 
+async function fetchCurrentDistance(subject_id, latitude, longitude) {
+    if (!latitude || !longitude) return null;
+    try {
+        const lectureRes = await db.query(
+            "SELECT id FROM lecture_sessions WHERE subject_id = $1 AND is_active = TRUE AND end_time IS NULL ORDER BY start_time DESC LIMIT 1",
+            [subject_id]
+        );
+        if (lectureRes.rows.length === 0) return null;
+        
+        const profPingRes = await db.query(
+            "SELECT latitude, longitude FROM professor_location_pings WHERE lecture_session_id = $1 ORDER BY timestamp DESC LIMIT 1",
+            [lectureRes.rows[0].id]
+        );
+        if (profPingRes.rows.length === 0) return null;
+        
+        return haversineDistance(latitude, longitude, profPingRes.rows[0].latitude, profPingRes.rows[0].longitude);
+    } catch {
+        return null;
+    }
+}
+
 // --- Professor Endpoints ---
 exports.startLectureSession = async (req, res) => {
     const { subject_id, latitude, longitude } = req.body;
@@ -25,7 +46,7 @@ exports.startLectureSession = async (req, res) => {
         const activeRes = await db.query(
             `SELECT id FROM lecture_sessions 
              WHERE subject_id = $1 AND professor_id = $2 
-             AND DATE(start_time) = CURRENT_DATE 
+             AND is_active = TRUE 
              AND end_time IS NULL
              ORDER BY start_time DESC LIMIT 1`,
             [subject_id, professor_id]
@@ -101,7 +122,9 @@ exports.startSession = async (req, res) => {
             );
         }
 
-        res.status(200).json({ session_id, message: 'Session started' });
+        const current_distance = await fetchCurrentDistance(subject_id, latitude, longitude);
+
+        res.status(200).json({ session_id, message: 'Session started', current_distance });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
@@ -115,7 +138,14 @@ exports.pingSession = async (req, res) => {
             'INSERT INTO student_location_pings (attendance_session_id, latitude, longitude) VALUES ($1, $2, $3)',
             [session_id, latitude, longitude]
         );
-        res.status(200).json({ message: 'Ping recorded' });
+        
+        const sessionRes = await db.query('SELECT subject_id FROM attendance_sessions WHERE id = $1', [session_id]);
+        let current_distance = null;
+        if (sessionRes.rows.length > 0) {
+            current_distance = await fetchCurrentDistance(sessionRes.rows[0].subject_id, latitude, longitude);
+        }
+
+        res.status(200).json({ message: 'Ping recorded', current_distance });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
