@@ -4,6 +4,7 @@ const adminController = require('../controllers/adminController');
 const authMiddleware = require('../middlewares/auth');
 
 router.post('/users', authMiddleware(['admin']), adminController.createUser);
+router.get('/users', authMiddleware(['admin']), adminController.listUsers);
 router.get('/professors', authMiddleware(['admin']), adminController.listProfessors);
 router.post('/semesters', authMiddleware(['admin']), adminController.createSemester);
 router.get('/semesters', authMiddleware(['admin']), adminController.listSemesters);

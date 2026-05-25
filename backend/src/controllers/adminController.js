@@ -158,6 +158,33 @@ exports.createUser = async (req, res) => {
     }
 };
 
+exports.listUsers = async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT u.id,
+                    u.name,
+                    u.email,
+                    u.role,
+                    s.roll_no,
+                    COALESCE(s.department, p.department, a.department) AS department,
+                    s.semester,
+                    s.id AS student_id,
+                    p.id AS professor_id,
+                    a.id AS admin_id,
+                    u.created_at
+             FROM users u
+             LEFT JOIN students s ON s.user_id = u.id
+             LEFT JOIN professors p ON p.user_id = u.id
+             LEFT JOIN admins a ON a.user_id = u.id
+             ORDER BY u.created_at DESC, u.name ASC`
+        );
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('List Users Error:', err);
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+};
+
 exports.listProfessors = async (req, res) => {
     try {
         const result = await db.query(
