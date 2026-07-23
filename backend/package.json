@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "name": "acadtrack-backend",
   "version": "1.0.0",
@@ -22,3 +23,31 @@
     "nodemon": "^3.1.0"
   }
 }
+=======
+{
+  "name": "acadtrack-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "build": "echo \"No build step required\""
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
+    "axios": "^1.16.1",
+    "bcrypt": "^5.1.1",
+    "cloudinary": "^2.10.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.11.5",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
+>>>>>>> 67614c88fb8d16a57a5d0aede3726c1707c6caf3
