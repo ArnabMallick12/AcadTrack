@@ -1,13 +1,87 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Webcam from 'react-webcam';
 import api from '@/lib/api';
 import { MapPin, Play, Square, Clock, AlertCircle, CheckCircle2, Camera } from 'lucide-react';
 
+const ATTENDANCE_SESSION_PREFIX = 'acadtrack:attendance-session';
+
+function localDateKey(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function getAttendanceStorageKey(subjectId) {
+    return `${ATTENDANCE_SESSION_PREFIX}:${subjectId}`;
+}
+
+function getElapsedSeconds(startedAt) {
+    const started = new Date(startedAt).getTime();
+    if (!Number.isFinite(started)) return 0;
+    return Math.max(0, Math.floor((Date.now() - started) / 1000));
+}
+
+function readStoredAttendanceSession(subjectId) {
+    if (typeof window === 'undefined' || !subjectId) return null;
+
+    try {
+        const raw = window.localStorage.getItem(getAttendanceStorageKey(subjectId));
+        if (!raw) return null;
+
+        const parsed = JSON.parse(raw);
+        if (
+            parsed?.status !== 'active' ||
+            String(parsed.subjectId) !== String(subjectId) ||
+            !parsed.sessionId ||
+            !parsed.startedAt ||
+            parsed.attendanceDate !== localDateKey()
+        ) {
+            window.localStorage.removeItem(getAttendanceStorageKey(subjectId));
+            return null;
+        }
+
+        return parsed;
+    } catch {
+        window.localStorage.removeItem(getAttendanceStorageKey(subjectId));
+        return null;
+    }
+}
+
+function saveStoredAttendanceSession(subjectId, session) {
+    if (typeof window === 'undefined' || !subjectId) return;
+
+    try {
+        window.localStorage.setItem(
+            getAttendanceStorageKey(subjectId),
+            JSON.stringify({
+                subjectId,
+                status: 'active',
+                attendanceDate: localDateKey(),
+                ...session,
+            })
+        );
+    } catch {
+        // Attendance can still continue if browser storage is unavailable.
+    }
+}
+
+function clearStoredAttendanceSession(subjectId) {
+    if (typeof window === 'undefined' || !subjectId) return;
+
+    try {
+        window.localStorage.removeItem(getAttendanceStorageKey(subjectId));
+    } catch {
+        // Nothing to clear if browser storage is unavailable.
+    }
+}
+
 export default function AttendanceTracker({ subjectId }) {
     const [status, setStatus] = useState('idle'); // idle, capturing, active, completed
     const [sessionId, setSessionId] = useState(null);
+    const [sessionStartedAt, setSessionStartedAt] = useState(null);
     const [timer, setTimer] = useState(0);
     const [todayClasses, setTodayClasses] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -31,6 +105,16 @@ export default function AttendanceTracker({ subjectId }) {
         fetchTodayClasses();
     }, [subjectId]);
 
+    useEffect(() => {
+        const storedSession = readStoredAttendanceSession(subjectId);
+        if (!storedSession) return;
+
+        setSessionId(storedSession.sessionId);
+        setSessionStartedAt(storedSession.startedAt);
+        setTimer(getElapsedSeconds(storedSession.startedAt));
+        setDistanceStr(storedSession.distanceStr || null);
+        setStatus('active');
+    }, [subjectId]);
     // Check if there's a currently active class (within the time window)
     const now = new Date();
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -62,12 +146,20 @@ export default function AttendanceTracker({ subjectId }) {
             const { latitude, longitude } = position.coords;
             try {
                 const { data } = await api.post('/attendance/start', { subject_id: subjectId, latitude, longitude, live_selfie });
+                const startedAt = new Date().toISOString();
+                const nextDistanceStr = data.current_distance !== null && data.current_distance !== undefined
+                    ? `${Math.round(data.current_distance)}m`
+                    : 'Awaiting Prof';
+
                 setSessionId(data.session_id);
-                if (data.current_distance !== null && data.current_distance !== undefined) {
-                    setDistanceStr(`${Math.round(data.current_distance)}m`);
-                } else {
-                    setDistanceStr('Awaiting Prof');
-                }
+                setSessionStartedAt(startedAt);
+                setTimer(0);
+                setDistanceStr(nextDistanceStr);
+                saveStoredAttendanceSession(subjectId, {
+                    sessionId: data.session_id,
+                    startedAt,
+                    distanceStr: nextDistanceStr,
+                });
                 setStatus('active');
             } catch (err) {
                 alert(err.response?.data?.error || 'Failed to start session. Ensure you are close to the professor and your face matches.');
@@ -85,7 +177,12 @@ export default function AttendanceTracker({ subjectId }) {
     const stopSession = async () => {
         try {
             const { data } = await api.post('/attendance/complete', { session_id: sessionId });
+            clearStoredAttendanceSession(subjectId);
             alert(`Session Completed! Marked as: ${data.message}`);
+            setSessionId(null);
+            setSessionStartedAt(null);
+            setTimer(0);
+            setDistanceStr(null);
             setStatus('completed');
         } catch (err) {
             alert('Failed to complete session');
@@ -97,7 +194,9 @@ export default function AttendanceTracker({ subjectId }) {
         let pinger;
 
         if (status === 'active') {
-            interval = setInterval(() => setTimer((t) => t + 1), 1000);
+            interval = setInterval(() => {
+                setTimer(sessionStartedAt ? getElapsedSeconds(sessionStartedAt) : 0);
+            }, 1000);
             
             // Heartbeat every 30s
             pinger = setInterval(() => {
@@ -106,7 +205,16 @@ export default function AttendanceTracker({ subjectId }) {
                     try {
                         const { data } = await api.post('/attendance/ping', { session_id: sessionId, latitude, longitude });
                         if (data.current_distance !== null && data.current_distance !== undefined) {
-                            setDistanceStr(`${Math.round(data.current_distance)}m`);
+                            const nextDistanceStr = `${Math.round(data.current_distance)}m`;
+                            setDistanceStr(nextDistanceStr);
+
+                            const storedSession = readStoredAttendanceSession(subjectId);
+                            if (storedSession) {
+                                saveStoredAttendanceSession(subjectId, {
+                                    ...storedSession,
+                                    distanceStr: nextDistanceStr,
+                                });
+                            }
                         }
                     } catch (e) {
                         console.error('Ping failed');
@@ -119,7 +227,7 @@ export default function AttendanceTracker({ subjectId }) {
             clearInterval(interval);
             clearInterval(pinger);
         };
-    }, [status, sessionId]);
+    }, [status, sessionId, sessionStartedAt, subjectId]);
 
     const formatTime = (s) => {
         const mins = Math.floor(s / 60);
