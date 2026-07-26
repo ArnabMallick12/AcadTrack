@@ -79,3 +79,5 @@ cloudflared
 
 # DeepFace model cache (downloaded at runtime)
 .deepface/
+
+PROJECT_SPEC.md
