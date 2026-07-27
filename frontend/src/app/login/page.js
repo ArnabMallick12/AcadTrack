@@ -18,14 +18,15 @@ export default function Login() {
             console.log('[login] success_response', {
                 role: data?.user?.role,
                 role_id: data?.user?.role_id,
-                hasToken: Boolean(data?.token),
+                hasAccessToken: Boolean(data?.access_token || data?.token),
+                hasRefreshToken: Boolean(data?.refresh_token),
             });
 
-            if (!data?.token || !data?.user?.role) {
+            if (!(data?.access_token || data?.token) || !data?.refresh_token || !data?.user?.role) {
                 throw new Error('Invalid login response from server');
             }
 
-            setSession(data.token, data.user);
+            setSession(data, data.user);
 
             const savedToken = getStoredToken();
             const savedUser = getStoredUser();

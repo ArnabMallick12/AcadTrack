@@ -1,8 +1,14 @@
 import Cookies from 'js-cookie';
 
-const TOKEN_KEY = 'token';
+const ACCESS_TOKEN_KEY = 'access_token';
+const LEGACY_TOKEN_KEY = 'token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
 const USER_KEY = 'user';
 const COURSE_KEY = 'selectedCourse';
+const DEVICE_KEY = 'device_id';
+const ACCESS_COOKIE_DAYS = 1 / 96; // 15 minutes
+const REFRESH_COOKIE_DAYS = 7;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 function safeLocalStorage() {
     if (typeof window === 'undefined') return null;
@@ -14,12 +20,39 @@ function safeLocalStorage() {
     }
 }
 
+function createDeviceId() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+
+    return `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+export function getDeviceId() {
+    const storage = safeLocalStorage();
+    const existing = storage?.getItem(DEVICE_KEY) || Cookies.get(DEVICE_KEY);
+    if (existing) return existing;
+
+    const deviceId = createDeviceId();
+    storage?.setItem(DEVICE_KEY, deviceId);
+    Cookies.set(DEVICE_KEY, deviceId, { expires: 365, path: '/' });
+    return deviceId;
+}
+
 export function getStoredToken() {
-    const tokenFromCookie = Cookies.get(TOKEN_KEY);
+    const tokenFromCookie = Cookies.get(ACCESS_TOKEN_KEY) || Cookies.get(LEGACY_TOKEN_KEY);
     if (tokenFromCookie) return tokenFromCookie;
 
     const storage = safeLocalStorage();
-    return storage?.getItem(TOKEN_KEY) || null;
+    return storage?.getItem(ACCESS_TOKEN_KEY) || storage?.getItem(LEGACY_TOKEN_KEY) || null;
+}
+
+export function getStoredRefreshToken() {
+    const tokenFromCookie = Cookies.get(REFRESH_TOKEN_KEY);
+    if (tokenFromCookie) return tokenFromCookie;
+
+    const storage = safeLocalStorage();
+    return storage?.getItem(REFRESH_TOKEN_KEY) || null;
 }
 
 export function getStoredUser() {
@@ -38,23 +71,45 @@ export function getStoredCourse() {
     return storage?.getItem(COURSE_KEY) || null;
 }
 
-export function setSession(token, user) {
+export function setSession(tokenOrTokens, user, maybeRefreshToken) {
+    const accessToken = typeof tokenOrTokens === 'object'
+        ? tokenOrTokens.access_token || tokenOrTokens.token
+        : tokenOrTokens;
+    const refreshToken = typeof tokenOrTokens === 'object'
+        ? tokenOrTokens.refresh_token
+        : maybeRefreshToken;
+
     console.log('[auth] setSession:start', {
-        hasToken: Boolean(token),
+        hasAccessToken: Boolean(accessToken),
+        hasRefreshToken: Boolean(refreshToken),
         role: user?.role,
         path: typeof window !== 'undefined' ? window.location.pathname : 'server',
     });
-    Cookies.set(TOKEN_KEY, token, { expires: 1, path: '/' });
-    Cookies.set(USER_KEY, JSON.stringify(user), { expires: 1, path: '/' });
+
+    if (accessToken) {
+        Cookies.set(ACCESS_TOKEN_KEY, accessToken, { expires: ACCESS_COOKIE_DAYS, path: '/' });
+        Cookies.set(LEGACY_TOKEN_KEY, accessToken, { expires: ACCESS_COOKIE_DAYS, path: '/' });
+    }
+    if (refreshToken) {
+        Cookies.set(REFRESH_TOKEN_KEY, refreshToken, { expires: REFRESH_COOKIE_DAYS, path: '/' });
+    }
+    Cookies.set(USER_KEY, JSON.stringify(user), { expires: REFRESH_COOKIE_DAYS, path: '/' });
 
     const storage = safeLocalStorage();
-    storage?.setItem(TOKEN_KEY, token);
+    if (accessToken) {
+        storage?.setItem(ACCESS_TOKEN_KEY, accessToken);
+        storage?.setItem(LEGACY_TOKEN_KEY, accessToken);
+    }
+    if (refreshToken) {
+        storage?.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    }
     storage?.setItem(USER_KEY, JSON.stringify(user));
+
     console.log('[auth] setSession:done', {
-        cookieToken: Boolean(Cookies.get(TOKEN_KEY)),
-        cookieUser: Boolean(Cookies.get(USER_KEY)),
-        localToken: Boolean(storage?.getItem(TOKEN_KEY)),
-        localUser: Boolean(storage?.getItem(USER_KEY)),
+        cookieAccessToken: Boolean(Cookies.get(ACCESS_TOKEN_KEY)),
+        cookieRefreshToken: Boolean(Cookies.get(REFRESH_TOKEN_KEY)),
+        localAccessToken: Boolean(storage?.getItem(ACCESS_TOKEN_KEY)),
+        localRefreshToken: Boolean(storage?.getItem(REFRESH_TOKEN_KEY)),
     });
 }
 
@@ -66,16 +121,42 @@ export function setSelectedCourse(course) {
     storage?.setItem(COURSE_KEY, serialized);
 }
 
+function notifyServerLogout(refreshToken, deviceId) {
+    if (typeof window === 'undefined' || !refreshToken || !deviceId) return;
+
+    try {
+        fetch(`${API_URL}/auth/logout`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Device-Id': deviceId,
+            },
+            body: JSON.stringify({ refresh_token: refreshToken, device_id: deviceId }),
+            keepalive: true,
+        }).catch(() => {});
+    } catch {
+        // Local logout should still complete if the network request cannot be sent.
+    }
+}
+
 export function clearSession() {
+    const refreshToken = getStoredRefreshToken();
+    const deviceId = getDeviceId();
+    notifyServerLogout(refreshToken, deviceId);
+
     console.log('[auth] clearSession', {
         path: typeof window !== 'undefined' ? window.location.pathname : 'server',
     });
-    Cookies.remove(TOKEN_KEY, { path: '/' });
+    Cookies.remove(ACCESS_TOKEN_KEY, { path: '/' });
+    Cookies.remove(LEGACY_TOKEN_KEY, { path: '/' });
+    Cookies.remove(REFRESH_TOKEN_KEY, { path: '/' });
     Cookies.remove(USER_KEY, { path: '/' });
     Cookies.remove(COURSE_KEY, { path: '/' });
 
     const storage = safeLocalStorage();
-    storage?.removeItem(TOKEN_KEY);
+    storage?.removeItem(ACCESS_TOKEN_KEY);
+    storage?.removeItem(LEGACY_TOKEN_KEY);
+    storage?.removeItem(REFRESH_TOKEN_KEY);
     storage?.removeItem(USER_KEY);
     storage?.removeItem(COURSE_KEY);
 }
