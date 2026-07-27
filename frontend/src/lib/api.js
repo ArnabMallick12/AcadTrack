@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { clearSession, getStoredToken } from '@/lib/auth';
+import { clearSession, getDeviceId, getStoredRefreshToken, getStoredToken, setSession } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
@@ -7,14 +7,47 @@ const api = axios.create({
     baseURL: API_URL,
 });
 
+const refreshClient = axios.create({
+    baseURL: API_URL,
+});
+
+let refreshPromise = null;
+
+async function refreshAccessToken() {
+    const refreshToken = getStoredRefreshToken();
+    if (!refreshToken) {
+        throw new Error('No refresh token available');
+    }
+
+    if (!refreshPromise) {
+        const deviceId = getDeviceId();
+        refreshPromise = refreshClient.post('/auth/refresh', {
+            refresh_token: refreshToken,
+            device_id: deviceId,
+        }, {
+            headers: { 'X-Device-Id': deviceId },
+        }).then(({ data }) => {
+            setSession(data, data.user);
+            return data.access_token || data.token;
+        }).finally(() => {
+            refreshPromise = null;
+        });
+    }
+
+    return refreshPromise;
+}
+
 api.interceptors.request.use((config) => {
     const token = getStoredToken();
+    const deviceId = getDeviceId();
     console.log('[api] request', {
         method: config.method,
         url: config.url,
         hasToken: Boolean(token),
+        hasDeviceId: Boolean(deviceId),
         path: typeof window !== 'undefined' ? window.location.pathname : 'server',
     });
+    config.headers['X-Device-Id'] = deviceId;
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -23,15 +56,33 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
+        const originalRequest = error.config;
+        const status = error?.response?.status;
         console.log('[api] response_error', {
-            url: error?.config?.url,
-            method: error?.config?.method,
-            status: error?.response?.status,
+            url: originalRequest?.url,
+            method: originalRequest?.method,
+            status,
             data: error?.response?.data,
             path: typeof window !== 'undefined' ? window.location.pathname : 'server',
         });
-        if (error?.response?.status === 401) {
+
+        const isAuthRoute = originalRequest?.url?.startsWith('/auth/login') || originalRequest?.url?.startsWith('/auth/refresh');
+        if (status === 401 && originalRequest && !originalRequest._retry && !isAuthRoute) {
+            originalRequest._retry = true;
+            try {
+                const newAccessToken = await refreshAccessToken();
+                originalRequest.headers = originalRequest.headers || {};
+                originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+                originalRequest.headers['X-Device-Id'] = getDeviceId();
+                return api(originalRequest);
+            } catch (refreshError) {
+                clearSession();
+                return Promise.reject(refreshError);
+            }
+        }
+
+        if (status === 401 && !isAuthRoute) {
             clearSession();
         }
 

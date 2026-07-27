@@ -197,7 +197,7 @@ export default function AttendanceTracker({ subjectId }) {
             interval = setInterval(() => {
                 setTimer(sessionStartedAt ? getElapsedSeconds(sessionStartedAt) : 0);
             }, 1000);
-            
+
             // Heartbeat every 30s
             pinger = setInterval(() => {
                 navigator.geolocation.getCurrentPosition(async (position) => {
@@ -361,15 +361,15 @@ export default function AttendanceTracker({ subjectId }) {
                                             />
                                         </div>
                                         <div className="flex gap-3">
-                                            <button 
-                                                onClick={() => setStatus('idle')} 
+                                            <button
+                                                onClick={() => setStatus('idle')}
                                                 className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 rounded-xl transition-colors"
                                                 disabled={verifyLoading}
                                             >
                                                 Cancel
                                             </button>
-                                            <button 
-                                                onClick={confirmStartSession} 
+                                            <button
+                                                onClick={confirmStartSession}
                                                 className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
                                                 disabled={verifyLoading}
                                             >
