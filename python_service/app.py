@@ -8,6 +8,15 @@ from flask import Flask, request, jsonify
 from deepface import DeepFace
 
 app = Flask(__name__)
+PYTHON_SERVICE_API_KEY = os.environ.get('PYTHON_SERVICE_API_KEY')
+
+@app.before_request
+def require_api_key():
+    if not PYTHON_SERVICE_API_KEY:
+        return None
+    if request.headers.get('X-API-Key') != PYTHON_SERVICE_API_KEY:
+        return jsonify({'error': 'Unauthorized service request'}), 401
+    return None
 
 # Constants
 MODEL_NAME = "Facenet512"

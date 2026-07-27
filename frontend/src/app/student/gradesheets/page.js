@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Layers, LogOut, ArrowLeft, ChevronDown, ChevronUp, Award, BookOpen, TrendingUp, FileText, Clock } from 'lucide-react';
 import api from '@/lib/api';
-import { clearSession, getStoredToken, getStoredUser } from '@/lib/auth';
+import { clearSession, getStoredUser, hasValidSession } from '@/lib/auth';
 
 export default function StudentGradeSheets() {
     const router = useRouter();
@@ -17,8 +17,7 @@ export default function StudentGradeSheets() {
 
     useEffect(() => {
         const storedUser = getStoredUser();
-        const storedToken = getStoredToken();
-        if (!storedUser || !storedToken) {
+        if (!storedUser || !hasValidSession()) {
             clearSession();
             router.push('/login');
             return;

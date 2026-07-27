@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { clearSession, getStoredToken, getStoredUser } from '@/lib/auth';
+import { clearSession, getStoredUser, hasValidSession } from '@/lib/auth';
 
 export function useAdminSession() {
     const router = useRouter();
@@ -11,9 +11,7 @@ export function useAdminSession() {
 
     useEffect(() => {
         const storedUser = getStoredUser();
-        const storedToken = getStoredToken();
-
-        if (!storedUser || !storedToken) {
+        if (!storedUser || !hasValidSession()) {
             clearSession();
             router.replace('/login');
             return;

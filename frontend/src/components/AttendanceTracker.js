@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Webcam from 'react-webcam';
 import api from '@/lib/api';
+import { getStoredUser } from '@/lib/auth';
 import { MapPin, Play, Square, Clock, AlertCircle, CheckCircle2, Camera } from 'lucide-react';
 
 const ATTENDANCE_SESSION_PREFIX = 'acadtrack:attendance-session';
@@ -68,6 +69,47 @@ function saveStoredAttendanceSession(subjectId, session) {
     }
 }
 
+function normalizeCoordinate(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    return n.toFixed(6);
+}
+
+function createNonce() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function buildAttendancePacket({ action, studentId, sessionId, latitude, longitude, timestamp, nonce }) {
+    return JSON.stringify({
+        action: String(action),
+        studentId: String(studentId),
+        sessionId: String(sessionId),
+        gps: {
+            latitude: normalizeCoordinate(latitude),
+            longitude: normalizeCoordinate(longitude),
+        },
+        timestamp: new Date(timestamp).toISOString(),
+        nonce: String(nonce),
+    });
+}
+
+async function hmacSha256Hex(secret, message) {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+    );
+    const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(message));
+    return Array.from(new Uint8Array(signature))
+        .map((byte) => byte.toString(16).padStart(2, '0'))
+        .join('');
+}
 function clearStoredAttendanceSession(subjectId) {
     if (typeof window === 'undefined' || !subjectId) return;
 
@@ -87,6 +129,7 @@ export default function AttendanceTracker({ subjectId }) {
     const [loading, setLoading] = useState(true);
     const [distanceStr, setDistanceStr] = useState(null);
     const webcamRef = useRef(null);
+    const signingKeyRef = useRef(null);
     const [verifyLoading, setVerifyLoading] = useState(false);
 
     // Fetch today's class schedule
@@ -131,6 +174,43 @@ export default function AttendanceTracker({ subjectId }) {
         return currentTime > c.end_time?.slice(0, 5);
     }) || [];
 
+    const getAttendanceSigningKey = async () => {
+        const cached = signingKeyRef.current;
+        if (cached && new Date(cached.expires_at).getTime() > Date.now() + 30000) {
+            return cached;
+        }
+
+        const { data } = await api.get('/attendance/signing-key');
+        signingKeyRef.current = data;
+        return data;
+    };
+
+    const signAttendanceRequest = async ({ action, sessionIdentifier, latitude, longitude }) => {
+        const storedUser = getStoredUser();
+        if (!storedUser) throw new Error('Student session not found');
+
+        const user = JSON.parse(storedUser);
+        const signingKey = await getAttendanceSigningKey();
+        const timestamp = new Date().toISOString();
+        const nonce = createNonce();
+        const packet = buildAttendancePacket({
+            action,
+            studentId: user.role_id,
+            sessionId: sessionIdentifier,
+            latitude,
+            longitude,
+            timestamp,
+            nonce,
+        });
+        const signature = await hmacSha256Hex(signingKey.signing_key, packet);
+
+        return {
+            key_id: signingKey.key_id,
+            timestamp,
+            nonce,
+            signature,
+        };
+    };
     const initiateCapture = () => {
         setStatus('capturing');
     };
@@ -145,7 +225,13 @@ export default function AttendanceTracker({ subjectId }) {
         navigator.geolocation.getCurrentPosition(async (position) => {
             const { latitude, longitude } = position.coords;
             try {
-                const { data } = await api.post('/attendance/start', { subject_id: subjectId, latitude, longitude, live_selfie });
+                const attendance_signature = await signAttendanceRequest({
+                    action: 'start',
+                    sessionIdentifier: `subject:${subjectId}`,
+                    latitude,
+                    longitude,
+                });
+                const { data } = await api.post('/attendance/start', { subject_id: subjectId, latitude, longitude, live_selfie, attendance_signature });
                 const startedAt = new Date().toISOString();
                 const nextDistanceStr = data.current_distance !== null && data.current_distance !== undefined
                     ? `${Math.round(data.current_distance)}m`
@@ -175,18 +261,31 @@ export default function AttendanceTracker({ subjectId }) {
     };
 
     const stopSession = async () => {
-        try {
-            const { data } = await api.post('/attendance/complete', { session_id: sessionId });
-            clearStoredAttendanceSession(subjectId);
-            alert(`Session Completed! Marked as: ${data.message}`);
-            setSessionId(null);
-            setSessionStartedAt(null);
-            setTimer(0);
-            setDistanceStr(null);
-            setStatus('completed');
-        } catch (err) {
-            alert('Failed to complete session');
-        }
+        if (!navigator.geolocation) return alert('Geolocation is not supported by your browser');
+
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const { latitude, longitude } = position.coords;
+            try {
+                const attendance_signature = await signAttendanceRequest({
+                    action: 'complete',
+                    sessionIdentifier: sessionId,
+                    latitude,
+                    longitude,
+                });
+                const { data } = await api.post('/attendance/complete', { session_id: sessionId, latitude, longitude, attendance_signature });
+                clearStoredAttendanceSession(subjectId);
+                alert(`Session Completed! Marked as: ${data.message}`);
+                setSessionId(null);
+                setSessionStartedAt(null);
+                setTimer(0);
+                setDistanceStr(null);
+                setStatus('completed');
+            } catch (err) {
+                alert(err.response?.data?.error || 'Failed to complete session');
+            }
+        }, () => {
+            alert('Please allow location access to complete attendance.');
+        });
     };
 
     useEffect(() => {
@@ -203,7 +302,13 @@ export default function AttendanceTracker({ subjectId }) {
                 navigator.geolocation.getCurrentPosition(async (position) => {
                     const { latitude, longitude } = position.coords;
                     try {
-                        const { data } = await api.post('/attendance/ping', { session_id: sessionId, latitude, longitude });
+                        const attendance_signature = await signAttendanceRequest({
+                            action: 'ping',
+                            sessionIdentifier: sessionId,
+                            latitude,
+                            longitude,
+                        });
+                        const { data } = await api.post('/attendance/ping', { session_id: sessionId, latitude, longitude, attendance_signature });
                         if (data.current_distance !== null && data.current_distance !== undefined) {
                             const nextDistanceStr = `${Math.round(data.current_distance)}m`;
                             setDistanceStr(nextDistanceStr);

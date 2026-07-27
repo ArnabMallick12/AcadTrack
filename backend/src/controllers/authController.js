@@ -106,10 +106,9 @@ exports.login = async (req, res) => {
     const email = req.body?.email?.trim();
     const password = req.body?.password;
     const deviceId = getDeviceId(req);
-    const forceLogin = Boolean(req.body?.force_login);
 
     try {
-        console.log('[login] attempt', { email, forceLogin });
+        console.log('[login] attempt', { email });
         if (!email || !password) {
             console.log('[login] missing_fields', { emailPresent: Boolean(email), passwordPresent: Boolean(password) });
             return res.status(400).json({ error: 'Email and password are required' });
@@ -142,47 +141,13 @@ exports.login = async (req, res) => {
             await client.query('BEGIN');
             await client.query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [user.id]);
 
-            const activeSessionRes = await client.query(
-                `SELECT id, device_id
-                 FROM user_sessions
-                 WHERE user_id = $1
-                   AND is_active = TRUE
-                   AND revoked_at IS NULL
-                   AND expires_at > CURRENT_TIMESTAMP
-                 ORDER BY created_at DESC
-                 LIMIT 1`,
-                [user.id]
-            );
-            const activeSession = activeSessionRes.rows[0];
-
-            if (activeSession && activeSession.device_id !== deviceId) {
-                if (!forceLogin) {
-                    await client.query('ROLLBACK');
-                    return res.status(409).json({
-                        code: 'SESSION_CONFLICT',
-                        error: 'This account is already signed in on another device. Please log out there first.'
-                    });
-                }
-
-                await client.query(
-                    `UPDATE user_sessions
-                     SET is_active = FALSE, revoked_at = CURRENT_TIMESTAMP
-                     WHERE user_id = $1
-                       AND is_active = TRUE
-                       AND revoked_at IS NULL`,
-                    [user.id]
-                );
-            }
-
             await client.query(
                 `UPDATE user_sessions
                  SET is_active = FALSE, revoked_at = CURRENT_TIMESTAMP
                  WHERE user_id = $1
-                   AND device_id = $2
-                   AND revoked_at IS NULL`,
-                [user.id, deviceId]
+                   AND is_active = TRUE`,
+                [user.id]
             );
-
             const sessionRes = await client.query(
                 `INSERT INTO user_sessions (user_id, device_id, refresh_token_hash, expires_at, is_active)
                  VALUES ($1, $2, '', $3, TRUE)

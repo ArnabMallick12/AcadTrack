@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { clearSession, getStoredToken, getStoredUser } from '@/lib/auth';
+import { clearSession, getStoredUser, hasValidSession } from '@/lib/auth';
 
 export default function StudentRegistrationPage() {
     const router = useRouter();
@@ -17,8 +17,7 @@ export default function StudentRegistrationPage() {
 
     useEffect(() => {
         const storedUser = getStoredUser();
-        const storedToken = getStoredToken();
-        if (!storedUser || !storedToken) {
+        if (!storedUser || !hasValidSession()) {
             clearSession();
             router.push('/login');
             return;
