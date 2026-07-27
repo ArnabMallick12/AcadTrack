@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { clearSession, getDeviceId, getStoredRefreshToken, getStoredToken, setSession } from '@/lib/auth';
+import { clearLocalSession, clearSession, getDeviceId, getStoredRefreshToken, getStoredToken, setSession } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
@@ -38,7 +38,8 @@ async function refreshAccessToken() {
 }
 
 api.interceptors.request.use((config) => {
-    const token = getStoredToken();
+    const isAuthRoute = config.url?.startsWith('/auth/login') || config.url?.startsWith('/auth/register');
+    const token = isAuthRoute ? null : getStoredToken();
     const deviceId = getDeviceId();
     console.log('[api] request', {
         method: config.method,
@@ -67,7 +68,9 @@ api.interceptors.response.use(
             path: typeof window !== 'undefined' ? window.location.pathname : 'server',
         });
 
-        const isAuthRoute = originalRequest?.url?.startsWith('/auth/login') || originalRequest?.url?.startsWith('/auth/refresh');
+        const isAuthRoute = originalRequest?.url?.startsWith('/auth/login')
+            || originalRequest?.url?.startsWith('/auth/refresh')
+            || originalRequest?.url?.startsWith('/auth/register');
         if (status === 401 && originalRequest && !originalRequest._retry && !isAuthRoute) {
             originalRequest._retry = true;
             try {
@@ -77,13 +80,16 @@ api.interceptors.response.use(
                 originalRequest.headers['X-Device-Id'] = getDeviceId();
                 return api(originalRequest);
             } catch (refreshError) {
-                clearSession();
+                clearLocalSession();
+                if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+                    window.location.assign('/login');
+                }
                 return Promise.reject(refreshError);
             }
         }
 
         if (status === 401 && !isAuthRoute) {
-            clearSession();
+            clearLocalSession();
         }
 
         return Promise.reject(error);

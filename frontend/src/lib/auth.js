@@ -139,14 +139,7 @@ function notifyServerLogout(refreshToken, deviceId) {
     }
 }
 
-export function clearSession() {
-    const refreshToken = getStoredRefreshToken();
-    const deviceId = getDeviceId();
-    notifyServerLogout(refreshToken, deviceId);
-
-    console.log('[auth] clearSession', {
-        path: typeof window !== 'undefined' ? window.location.pathname : 'server',
-    });
+export function clearLocalSession() {
     Cookies.remove(ACCESS_TOKEN_KEY, { path: '/' });
     Cookies.remove(LEGACY_TOKEN_KEY, { path: '/' });
     Cookies.remove(REFRESH_TOKEN_KEY, { path: '/' });
@@ -159,4 +152,19 @@ export function clearSession() {
     storage?.removeItem(REFRESH_TOKEN_KEY);
     storage?.removeItem(USER_KEY);
     storage?.removeItem(COURSE_KEY);
+}
+
+export function hasValidSession() {
+    return Boolean(getStoredToken() && getStoredRefreshToken() && getStoredUser());
+}
+
+export function clearSession() {
+    const refreshToken = getStoredRefreshToken();
+    const deviceId = getDeviceId();
+    notifyServerLogout(refreshToken, deviceId);
+
+    console.log('[auth] clearSession', {
+        path: typeof window !== 'undefined' ? window.location.pathname : 'server',
+    });
+    clearLocalSession();
 }

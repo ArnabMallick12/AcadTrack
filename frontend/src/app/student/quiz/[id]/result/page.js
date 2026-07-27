@@ -27,7 +27,7 @@ export default function QuizResult({ params }) {
 
     if (loading) {
         return (
-            <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+            <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-slate-400 text-sm font-medium">Loading result...</p>
@@ -38,8 +38,8 @@ export default function QuizResult({ params }) {
 
     if (!data) {
         return (
-            <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-10 max-w-md text-center">
+            <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-6">
+                <div className="max-w-md rounded-2xl border border-slate-700 bg-slate-800 p-6 text-center sm:p-10">
                     <h2 className="text-2xl font-bold text-white mb-3">No Result Found</h2>
                     <p className="text-slate-400 mb-6">You haven't submitted this quiz yet.</p>
                     <button onClick={() => router.back()} className="px-8 py-3 rounded-xl bg-slate-700 text-white font-medium hover:bg-slate-600 transition-colors">
@@ -63,7 +63,7 @@ export default function QuizResult({ params }) {
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
             {/* Header */}
             <header className="border-b border-slate-700/50 backdrop-blur-sm bg-slate-900/50 sticky top-0 z-10">
-                <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+                <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4 sm:px-6">
                     <button
                         onClick={() => router.back()}
                         className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
@@ -76,9 +76,9 @@ export default function QuizResult({ params }) {
                 </div>
             </header>
 
-            <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+            <main className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
                 {/* Score Card */}
-                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8">
+                <div className="rounded-2xl border border-slate-700 bg-slate-800 p-4 sm:p-8">
                     <div className="flex flex-col md:flex-row items-center gap-8">
                         {/* Score Circle */}
                         <div className="relative w-40 h-40 shrink-0">
@@ -106,7 +106,7 @@ export default function QuizResult({ params }) {
                         {/* Stats */}
                         <div className="flex-1 w-full">
                             <h2 className="text-2xl font-bold text-white mb-1">{quiz.title}</h2>
-                            <p className="text-slate-400 text-sm mb-6 flex items-center gap-2">
+                            <p className="mb-6 flex flex-col gap-2 text-sm text-slate-400 sm:flex-row sm:items-center">
                                 <Clock size={14} />
                                 Submitted {new Date(submission.submitted_at).toLocaleString()}
                             </p>
@@ -145,7 +145,7 @@ export default function QuizResult({ params }) {
                 </div>
 
                 {/* Question-by-Question Review */}
-                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+                <div className="rounded-2xl border border-slate-700 bg-slate-800 p-4 sm:p-6">
                     <h3 className="text-xl font-bold text-white mb-6">Question Review</h3>
 
                     <div className="space-y-4">
@@ -165,7 +165,7 @@ export default function QuizResult({ params }) {
                                         <h4 className="text-white font-medium leading-relaxed">{q.question}</h4>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 ml-11">
+                                    <div className="ml-0 grid grid-cols-1 gap-2 sm:ml-11 sm:grid-cols-2">
                                         {['A', 'B', 'C', 'D'].map(opt => {
                                             const optionText = q[`option_${opt.toLowerCase()}`];
                                             const isThisCorrect = q.correct_answer === opt;
@@ -193,7 +193,7 @@ export default function QuizResult({ params }) {
                                     </div>
 
                                     {isSkipped && (
-                                        <p className="text-xs text-slate-500 mt-3 ml-11 font-medium">— Not answered</p>
+                                        <p className="ml-0 mt-3 text-xs font-medium text-slate-500 sm:ml-11">— Not answered</p>
                                     )}
                                 </div>
                             );

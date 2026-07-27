@@ -105,8 +105,8 @@ export default function StudentGradeSheets() {
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
             {/* Header */}
             <header className="border-b border-slate-700/50 backdrop-blur-sm bg-slate-900/50 sticky top-0 z-10">
-                <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
+                <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
                             <Layers size={20} className="text-white" />
                         </div>
@@ -143,11 +143,11 @@ export default function StudentGradeSheets() {
                 </div>
             </header>
 
-            <main className="max-w-6xl mx-auto px-6 py-10">
+            <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
                 {/* Title + Filter */}
                 <div className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                     <div>
-                        <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                        <h2 className="mb-2 flex items-center gap-3 text-2xl font-bold text-white sm:text-3xl">
                             <Award size={28} className="text-blue-400" />
                             Semester Grade Sheets
                         </h2>
@@ -161,12 +161,12 @@ export default function StudentGradeSheets() {
                         </p>
                     </div>
                     {data?.grade_sheets?.length > 1 && (
-                        <div className="relative shrink-0">
+                        <div className="relative w-full sm:w-auto sm:shrink-0">
                             <select
                                 id="semester-grade-filter"
                                 value={selectedSemester}
                                 onChange={(e) => setSelectedSemester(e.target.value)}
-                                className="appearance-none bg-slate-800/80 border border-slate-600/50 text-white rounded-xl pl-4 pr-10 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 cursor-pointer transition-all duration-200 hover:bg-slate-700/80 min-w-[200px]"
+                                className="w-full appearance-none rounded-xl border border-slate-600/50 bg-slate-800/80 py-2.5 pl-4 pr-10 text-sm font-medium text-white transition-all duration-200 hover:bg-slate-700/80 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:min-w-[200px]"
                             >
                                 <option value="all">All Semesters</option>
                                 {data.grade_sheets.map((sheet) => (
@@ -241,7 +241,7 @@ export default function StudentGradeSheets() {
                                     key={`unreleased-${sheet.semester_id}`}
                                     className="bg-slate-800/40 backdrop-blur border border-slate-700/40 rounded-2xl overflow-hidden"
                                 >
-                                    <div className="p-6 flex items-center justify-between">
+                                    <div className="flex flex-col gap-4 p-4 sm:p-6 md:flex-row md:items-center md:justify-between">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
                                                 <Clock size={22} className="text-amber-400" />
@@ -287,7 +287,7 @@ export default function StudentGradeSheets() {
                                 {/* Card Header */}
                                 <button
                                     onClick={() => toggleExpanded(sheet.semester_id)}
-                                    className="w-full p-6 flex items-center justify-between text-left hover:bg-slate-700/20 transition-colors duration-200"
+                                    className="flex w-full flex-col gap-4 p-4 text-left transition-colors duration-200 hover:bg-slate-700/20 sm:p-6 md:flex-row md:items-center md:justify-between"
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/10">

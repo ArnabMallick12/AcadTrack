@@ -1,5 +1,9 @@
 const db = require('../config/db');
 
+function normalizeDepartment(department) {
+    return String(department || '').trim().toLowerCase();
+}
+
 async function getStudentProfile(userId) {
     const result = await db.query(
         `SELECT s.*, u.name, u.email
@@ -24,9 +28,10 @@ exports.getCurrentRegistration = async (req, res) => {
                     COALESCE(semester_no, semester_number) AS normalized_semester_no,
                     COALESCE(registration_open, registration_status = 'open') AS normalized_registration_open
              FROM semesters
-             WHERE department = $1
+             WHERE LOWER(TRIM(department)) = LOWER(TRIM($1))
+               AND COALESCE(semester_no, semester_number) = $2
              ORDER BY COALESCE(semester_no, semester_number) ASC, created_at DESC`,
-            [student.department]
+            [student.department, student.semester]
         );
 
         const semesters = [];
@@ -69,7 +74,7 @@ exports.getCurrentRegistration = async (req, res) => {
                     COALESCE(sem.semester_no, sem.semester_number) AS semester_no,
                     sem.gradesheet_released
              FROM semesters sem
-             WHERE sem.department = $1
+             WHERE LOWER(TRIM(sem.department)) = LOWER(TRIM($1))
              ORDER BY COALESCE(sem.semester_no, sem.semester_number), COALESCE(sem.name, sem.academic_year)`,
             [student.department]
         );
@@ -165,7 +170,7 @@ exports.submitRegistration = async (req, res) => {
             return res.status(400).json({ error: 'Registration is closed for this semester' });
         }
 
-        if (semester.department !== student.department || Number(semester.normalized_semester_no) !== Number(student.semester)) {
+        if (normalizeDepartment(semester.department) !== normalizeDepartment(student.department) || Number(semester.normalized_semester_no) !== Number(student.semester)) {
             return res.status(403).json({ error: 'This semester is not available for the student profile' });
         }
 
@@ -301,7 +306,7 @@ exports.getGradeSheets = async (req, res) => {
                     COALESCE(sem.semester_no, sem.semester_number) AS semester_no,
                     sem.gradesheet_released
              FROM semesters sem
-             WHERE sem.department = $1
+             WHERE LOWER(TRIM(sem.department)) = LOWER(TRIM($1))
              ORDER BY COALESCE(sem.semester_no, sem.semester_number) ASC, COALESCE(sem.name, sem.academic_year)`,
             [student.department]
         );

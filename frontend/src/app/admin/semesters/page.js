@@ -10,7 +10,7 @@ import { getRegistrationStatusLabel, getReleaseProgress, normalizeSemester } fro
 
 const initialSemesterForm = {
     name: '',
-    department: '',
+    department: 'CSE',
     semester_no: '',
     total_credits: '',
 };
@@ -116,19 +116,22 @@ export default function AdminSemestersPage() {
             {message ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
             {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
 
-            <section className="grid gap-6 xl:grid-cols-[360px_360px_minmax(0,1fr)]">
-                <form onSubmit={submitSemester} className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+            <section className="grid gap-6 xl:grid-cols-[minmax(280px,360px)_minmax(280px,360px)_minmax(0,1fr)]">
+                <form onSubmit={submitSemester} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
                     <h3 className="text-xl font-bold text-gray-800">Create Semester</h3>
                     <div className="mt-5 space-y-4">
                         <input className="w-full rounded-lg border px-4 py-3 text-sm" placeholder="Semester name" value={semesterForm.name} onChange={(e) => setSemesterForm({ ...semesterForm, name: e.target.value })} required />
-                        <input className="w-full rounded-lg border px-4 py-3 text-sm" placeholder="Department" value={semesterForm.department} onChange={(e) => setSemesterForm({ ...semesterForm, department: e.target.value })} required />
+                        <select className="w-full rounded-lg border px-4 py-3 text-sm" value={semesterForm.department} onChange={(e) => setSemesterForm({ ...semesterForm, department: e.target.value })} required>
+                            <option value="CSE">CSE</option>
+                            <option value="IT">IT</option>
+                        </select>
                         <input className="w-full rounded-lg border px-4 py-3 text-sm" type="number" placeholder="Semester number" value={semesterForm.semester_no} onChange={(e) => setSemesterForm({ ...semesterForm, semester_no: e.target.value })} required />
                         <input className="w-full rounded-lg border px-4 py-3 text-sm" type="number" placeholder="Total credits" value={semesterForm.total_credits} onChange={(e) => setSemesterForm({ ...semesterForm, total_credits: e.target.value })} required />
                         <button className="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700">Create Semester</button>
                     </div>
                 </form>
 
-                <form onSubmit={submitCourse} className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                <form onSubmit={submitCourse} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
                     <h3 className="text-xl font-bold text-gray-800">Add Course Offering</h3>
                     <div className="mt-5 space-y-4">
                         <select className="w-full rounded-lg border px-4 py-3 text-sm" value={courseForm.semester_id} onChange={(e) => setCourseForm({ ...courseForm, semester_id: e.target.value })} required>
@@ -170,7 +173,7 @@ export default function AdminSemestersPage() {
                     </div>
                 </form>
 
-                <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div>
                             <h3 className="text-xl font-bold text-gray-800">Semester Board</h3>

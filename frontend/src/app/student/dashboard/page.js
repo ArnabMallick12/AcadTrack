@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckSquare, FileText, ClipboardList, BookOpen, LogOut, ArrowLeft, Layers, TrendingUp, Calendar, Award, Target, Trophy, Hash, Upload, AlertCircle, Clock, ExternalLink } from 'lucide-react';
 import AttendanceTracker from '@/components/AttendanceTracker';
 import api from '@/lib/api';
 import { clearSession, getStoredCourse, getStoredUser } from '@/lib/auth';
 
-export default function StudentDashboard() {
+function StudentDashboardContent() {
     const [user, setUser] = useState(null);
     const [activeTab, setActiveTab] = useState('attendance');
     const [selectedCourse, setSelectedCourse] = useState(null);
@@ -245,10 +245,10 @@ export default function StudentDashboard() {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="flex min-h-screen flex-col bg-gray-50 lg:flex-row">
             {/* Sidebar */}
-            <aside className="w-64 bg-white shadow-lg flex flex-col">
-                <div className="p-6 border-b">
+            <aside className="flex w-full flex-col bg-white shadow-lg lg:w-64 lg:shrink-0">
+                <div className="border-b p-4 sm:p-6">
                     <div className="flex items-center gap-2 mb-3">
                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                             <Layers size={16} className="text-white" />
@@ -275,7 +275,7 @@ export default function StudentDashboard() {
                         <span>Back to Courses</span>
                     </button>
                 </div>
-                <nav className="flex-1 p-4 space-y-2">
+                <nav className="flex gap-2 overflow-x-auto p-4 lg:flex-1 lg:flex-col lg:space-y-2 lg:overflow-y-auto">
                     {tabs.map((t) => (
                         <button
                             key={t.id}
@@ -285,7 +285,7 @@ export default function StudentDashboard() {
                                 if (t.id === 'quizzes') handleSubjectSearch();
                                 if (t.id === 'attendance') fetchAttendance(user.role_id, subjectId);
                             }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === t.id ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+                            className={`flex shrink-0 items-center gap-3 rounded-lg px-4 py-3 transition-colors lg:w-full ${activeTab === t.id ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
                         >
                             <t.icon size={20} /> {t.name}
                         </button>
@@ -299,17 +299,17 @@ export default function StudentDashboard() {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 p-8 overflow-y-auto h-screen">
-                <header className="mb-8 flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-800">Welcome back, {user.name}!</h1>
+            <main className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:h-screen lg:p-8">
+                <header className="mb-6 flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6 lg:mb-8 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="min-w-0">
+                        <h1 className="text-xl font-bold text-gray-800 sm:text-2xl">Welcome back, {user.name}!</h1>
                         <p className="text-gray-500">
                             Viewing <span className="font-semibold text-emerald-600">{selectedCourse.name}</span>
                             {selectedCourse.code && <span className="text-gray-400 ml-1">({selectedCourse.code})</span>}
                         </p>
                     </div>
                     {activeTab === 'quizzes' && (
-                        <button onClick={handleSubjectSearch} className="bg-emerald-600 text-white px-5 py-2.5 rounded-lg hover:bg-emerald-700 font-medium transition-colors">
+                        <button onClick={handleSubjectSearch} className="w-full rounded-lg bg-emerald-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-emerald-700 sm:w-auto">
                             Load Quizzes
                         </button>
                     )}
@@ -1085,5 +1085,13 @@ export default function StudentDashboard() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function StudentDashboard() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-gray-50">Loading dashboard...</div>}>
+            <StudentDashboardContent />
+        </Suspense>
     );
 }

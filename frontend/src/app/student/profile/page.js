@@ -67,7 +67,7 @@ export default function StudentProfilePage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
             <header className="border-b border-slate-700/50 backdrop-blur-sm bg-slate-900/50 sticky top-0 z-10">
-                <div className="max-w-4xl mx-auto px-6 py-4 flex justify-between items-center">
+                <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
                             <Layers size={20} className="text-white" />
@@ -87,7 +87,7 @@ export default function StudentProfilePage() {
                 </div>
             </header>
 
-            <main className="max-w-4xl mx-auto px-6 py-10">
+            <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
                 <button
                     onClick={() => router.push('/student/courses')}
                     className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white mb-6 transition-colors"
@@ -97,7 +97,7 @@ export default function StudentProfilePage() {
                 </button>
 
                 <div className="mb-8">
-                    <h2 className="text-3xl font-bold text-white mb-2">My Account</h2>
+                    <h2 className="mb-2 text-2xl font-bold text-white sm:text-3xl">My Account</h2>
                     <p className="text-slate-400">View your account details, registered face image, and biometric registration.</p>
                 </div>
 
@@ -107,7 +107,7 @@ export default function StudentProfilePage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-6">
+                        <div className="rounded-2xl border border-slate-700/50 bg-slate-800/50 p-4 backdrop-blur sm:p-6">
                             <h3 className="text-lg font-bold text-white mb-6">Account Details</h3>
                             <div className="space-y-5">
                                 <div className="flex items-start gap-3">
@@ -131,7 +131,7 @@ export default function StudentProfilePage() {
                             </div>
                         </div>
 
-                        <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-6">
+                        <div className="rounded-2xl border border-slate-700/50 bg-slate-800/50 p-4 backdrop-blur sm:p-6">
                             <div className="flex items-center gap-2 mb-6">
                                 <Camera size={20} className="text-purple-400" />
                                 <h3 className="text-lg font-bold text-white">Registered Face</h3>

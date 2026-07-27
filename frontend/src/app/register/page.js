@@ -7,7 +7,7 @@ import api from '@/lib/api';
 export default function Register() {
     const [formData, setFormData] = useState({
         name: '', email: '', password: '', role: 'student',
-        roll_no: '', department: '', semester: ''
+        roll_no: '', department: 'CSE', semester: ''
     });
     const [error, setError] = useState('');
     const router = useRouter();
@@ -25,9 +25,9 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
-            <div className="max-w-md w-full p-8 bg-white rounded-xl shadow-lg">
-                <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Register for AcadTrack</h2>
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8 sm:py-12">
+            <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-lg sm:p-8">
+                <h2 className="mb-8 text-center text-2xl font-bold text-gray-800 sm:text-3xl">Register for AcadTrack</h2>
                 {error && <div className="bg-red-50 text-red-500 p-3 rounded mb-4 text-center">{error}</div>}
                 
                 <form onSubmit={handleRegister} className="space-y-4">
@@ -35,13 +35,16 @@ export default function Register() {
                     <input name="email" type="email" placeholder="Email" required className="w-full p-3 border rounded-lg outline-none" onChange={handleChange} />
                     <input name="password" type="password" placeholder="Password" required className="w-full p-3 border rounded-lg outline-none" onChange={handleChange} />
                     
-                    <select name="role" className="w-full p-3 border rounded-lg outline-none" onChange={handleChange}>
+                    <select name="role" className="w-full p-3 border rounded-lg outline-none" value={formData.role} onChange={handleChange}>
                         <option value="student">Student</option>
                         <option value="professor">Professor</option>
                         <option value="admin">Admin</option>
                     </select>
 
-                    <input name="department" placeholder="Department (e.g., CS)" required className="w-full p-3 border rounded-lg outline-none" onChange={handleChange} />
+                    <select name="department" required className="w-full rounded-lg border p-3 outline-none" value={formData.department} onChange={handleChange}>
+                        <option value="CSE">CSE</option>
+                        <option value="IT">IT</option>
+                    </select>
 
                     {formData.role === 'student' && (
                         <>

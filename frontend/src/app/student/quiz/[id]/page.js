@@ -205,7 +205,7 @@ export default function QuizTaker({ params }) {
     // --- RENDER: Loading ---
     if (loading) {
         return (
-            <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+            <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-slate-400 text-sm font-medium">Loading quiz...</p>
@@ -217,8 +217,8 @@ export default function QuizTaker({ params }) {
     // --- RENDER: Error States ---
     if (quizError === 'already_submitted') {
         return (
-            <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-10 max-w-md text-center shadow-2xl">
+            <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-6">
+                <div className="max-w-md rounded-2xl border border-slate-700 bg-slate-800 p-6 text-center shadow-2xl sm:p-10">
                     <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-emerald-500/10 flex items-center justify-center">
                         <CheckCircle2 size={40} className="text-emerald-400" />
                     </div>
@@ -227,7 +227,7 @@ export default function QuizTaker({ params }) {
                     {result?.score !== undefined && (
                         <p className="text-3xl font-bold text-emerald-400 mb-6">Score: {result.score}</p>
                     )}
-                    <div className="flex gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row">
                         <button onClick={() => router.back()} className="flex-1 px-6 py-3 rounded-xl bg-slate-700 text-white font-medium hover:bg-slate-600 transition-colors">
                             Go Back
                         </button>
@@ -242,8 +242,8 @@ export default function QuizTaker({ params }) {
 
     if (quizError === 'not_started') {
         return (
-            <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-10 max-w-md text-center shadow-2xl">
+            <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-6">
+                <div className="max-w-md rounded-2xl border border-slate-700 bg-slate-800 p-6 text-center shadow-2xl sm:p-10">
                     <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-500/10 flex items-center justify-center">
                         <Clock size={40} className="text-amber-400" />
                     </div>
@@ -262,8 +262,8 @@ export default function QuizTaker({ params }) {
 
     if (quizError === 'expired') {
         return (
-            <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-10 max-w-md text-center shadow-2xl">
+            <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-6">
+                <div className="max-w-md rounded-2xl border border-slate-700 bg-slate-800 p-6 text-center shadow-2xl sm:p-10">
                     <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/10 flex items-center justify-center">
                         <XCircle size={40} className="text-red-400" />
                     </div>
@@ -279,8 +279,8 @@ export default function QuizTaker({ params }) {
 
     if (quizError === 'load_failed') {
         return (
-            <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-10 max-w-md text-center shadow-2xl">
+            <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-6">
+                <div className="max-w-md rounded-2xl border border-slate-700 bg-slate-800 p-6 text-center shadow-2xl sm:p-10">
                     <h2 className="text-2xl font-bold text-white mb-3">Failed to Load Quiz</h2>
                     <p className="text-slate-400 mb-6">Please check your connection and try again.</p>
                     <button onClick={() => router.back()} className="px-8 py-3 rounded-xl bg-slate-700 text-white font-medium hover:bg-slate-600 transition-colors">
@@ -298,8 +298,8 @@ export default function QuizTaker({ params }) {
         const offset = circumference * (1 - percentage / 100);
 
         return (
-            <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-10 max-w-lg w-full text-center shadow-2xl">
+            <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-6">
+                <div className="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-800 p-6 text-center shadow-2xl sm:p-10">
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/10 flex items-center justify-center">
                         <CheckCircle2 size={32} className="text-emerald-400" />
                     </div>
@@ -337,7 +337,7 @@ export default function QuizTaker({ params }) {
                         </div>
                     )}
 
-                    <div className="flex gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row">
                         <button onClick={() => router.back()} className="flex-1 px-6 py-3 rounded-xl bg-slate-700 text-white font-medium hover:bg-slate-600 transition-colors">
                             Back to Dashboard
                         </button>
@@ -353,8 +353,8 @@ export default function QuizTaker({ params }) {
     // --- RENDER: Fullscreen Gate ---
     if (!isFullscreen) {
         return (
-            <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-10 max-w-lg w-full text-center shadow-2xl">
+            <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-6">
+                <div className="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-800 p-6 text-center shadow-2xl sm:p-10">
                     <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/10 flex items-center justify-center">
                         <Shield size={40} className="text-red-400" />
                     </div>
@@ -401,9 +401,9 @@ export default function QuizTaker({ params }) {
     if (showReview) {
         const answeredCount = Object.keys(answers).length;
         return (
-            <div className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col select-none" style={{ userSelect: 'none' }}>
+            <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 select-none" style={{ userSelect: 'none' }}>
                 {/* Header */}
-                <header className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700 px-6 py-4 flex items-center justify-between">
+                <header className="flex flex-col gap-3 border-b border-slate-700 bg-slate-800/80 px-4 py-4 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
                     <div className="flex items-center gap-3">
                         <Shield size={20} className="text-indigo-400" />
                         <h1 className="text-lg font-bold text-white">{quiz.title} — Review</h1>
@@ -411,7 +411,7 @@ export default function QuizTaker({ params }) {
                     <TimerDisplay timeLeft={timeLeft} />
                 </header>
 
-                <main className="flex-1 overflow-y-auto p-6">
+                <main className="flex-1 overflow-y-auto p-4 sm:p-6">
                     <div className="max-w-3xl mx-auto">
                         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-6">
                             <h3 className="text-xl font-bold text-white mb-2">Review Your Answers</h3>
@@ -441,8 +441,8 @@ export default function QuizTaker({ params }) {
                             {/* Summary of Answers */}
                             <div className="space-y-3">
                                 {quiz.questions.map((q, i) => (
-                                    <div key={q.id} className="flex items-center justify-between bg-slate-700/50 rounded-lg px-4 py-3">
-                                        <div className="flex items-center gap-3">
+                                    <div key={q.id} className="flex flex-col gap-2 rounded-lg bg-slate-700/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex min-w-0 items-center gap-3">
                                             <span className="text-sm font-mono text-slate-400 w-6">{i + 1}.</span>
                                             <span className="text-sm text-slate-300 truncate max-w-md">{q.question}</span>
                                         </div>
@@ -458,7 +458,7 @@ export default function QuizTaker({ params }) {
                             </div>
                         </div>
 
-                        <div className="flex gap-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
                             <button
                                 onClick={() => setShowReview(false)}
                                 className="flex-1 py-4 rounded-xl bg-slate-700 text-white font-medium hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
@@ -484,11 +484,11 @@ export default function QuizTaker({ params }) {
     const progressPercent = Math.round((answeredCount / quiz.questions.length) * 100);
 
     return (
-        <div className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col select-none" style={{ userSelect: 'none' }}>
+        <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 select-none" style={{ userSelect: 'none' }}>
             {/* Violation Overlay */}
             {showViolationOverlay && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-                    <div className="bg-red-900/90 border-2 border-red-500 rounded-2xl p-8 max-w-md text-center shadow-2xl animate-pulse">
+                    <div className="mx-4 max-w-md rounded-2xl border-2 border-red-500 bg-red-900/90 p-6 text-center shadow-2xl animate-pulse sm:p-8">
                         <AlertTriangle size={56} className="text-red-400 mx-auto mb-4" />
                         <h2 className="text-2xl font-bold text-white mb-2">⚠ Violation Detected!</h2>
                         <p className="text-red-200 mb-3 text-lg font-semibold">{violationType}</p>
@@ -517,7 +517,7 @@ export default function QuizTaker({ params }) {
             )}
 
             {/* Header */}
-            <header className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700 px-6 py-3 flex items-center justify-between shrink-0">
+            <header className="flex shrink-0 flex-col gap-3 border-b border-slate-700 bg-slate-800/80 px-4 py-3 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                         <Shield size={20} className="text-indigo-400" />
@@ -572,7 +572,7 @@ export default function QuizTaker({ params }) {
                 </aside>
 
                 {/* Question Area */}
-                <main className="flex-1 overflow-y-auto px-6 py-8">
+                <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
                     <div className="max-w-3xl mx-auto">
                         {/* Question number badge */}
                         <div className="flex items-center gap-3 mb-6">
@@ -587,7 +587,7 @@ export default function QuizTaker({ params }) {
                         </div>
 
                         {/* Question text */}
-                        <h2 className="text-2xl font-bold text-white mb-8 leading-relaxed">
+                        <h2 className="mb-8 text-xl font-bold leading-relaxed text-white sm:text-2xl">
                             {q.question}
                         </h2>
 
@@ -600,7 +600,7 @@ export default function QuizTaker({ params }) {
                                     <button
                                         key={opt}
                                         onClick={() => setAnswers({ ...answers, [q.id]: opt })}
-                                        className={`w-full text-left p-5 rounded-xl border-2 transition-all duration-200 flex items-center gap-4 group ${
+                                        className={`group flex w-full items-center gap-3 rounded-xl border-2 p-4 text-left transition-all duration-200 sm:gap-4 sm:p-5 ${
                                             isSelected
                                                 ? 'bg-indigo-500/10 border-indigo-500 shadow-lg shadow-indigo-500/10'
                                                 : 'bg-slate-800/50 border-slate-700 hover:border-slate-500 hover:bg-slate-800'
@@ -622,7 +622,7 @@ export default function QuizTaker({ params }) {
                         </div>
 
                         {/* Navigation */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <button
                                 onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
                                 disabled={currentQuestion === 0}

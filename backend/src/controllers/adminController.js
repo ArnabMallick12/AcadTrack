@@ -185,6 +185,83 @@ exports.listUsers = async (req, res) => {
     }
 };
 
+exports.updateStudentSemester = async (req, res) => {
+    const studentId = Number(req.params.studentId);
+    const semester = Number(req.body.semester);
+
+    if (!Number.isInteger(studentId) || studentId <= 0) {
+        return res.status(400).json({ error: 'Invalid student' });
+    }
+
+    if (!Number.isInteger(semester) || semester < 1 || semester > 12) {
+        return res.status(400).json({ error: 'Semester must be a whole number between 1 and 12' });
+    }
+
+    try {
+        const result = await db.query(
+            `UPDATE students
+             SET semester = $1
+             WHERE id = $2
+             RETURNING id, user_id, semester`,
+            [semester, studentId]
+        );
+
+        if (!result.rows.length) {
+            return res.status(404).json({ error: 'Student not found' });
+        }
+
+        return res.status(200).json({
+            message: 'Student semester updated successfully',
+            student: result.rows[0],
+        });
+    } catch (err) {
+        console.error('Update Student Semester Error:', err);
+        return res.status(500).json({ error: 'Failed to update student semester' });
+    }
+};
+
+exports.bulkUpdateStudentSemesters = async (req, res) => {
+    const semester = Number(req.body.semester);
+    const studentIds = Array.isArray(req.body.student_ids)
+        ? req.body.student_ids.map((id) => Number(id))
+        : [];
+
+    if (!studentIds.length) {
+        return res.status(400).json({ error: 'Select at least one student' });
+    }
+
+    if (studentIds.some((id) => !Number.isInteger(id) || id <= 0)) {
+        return res.status(400).json({ error: 'Invalid student selection' });
+    }
+
+    if (!Number.isInteger(semester) || semester < 1 || semester > 12) {
+        return res.status(400).json({ error: 'Semester must be a whole number between 1 and 12' });
+    }
+
+    try {
+        const result = await db.query(
+            `UPDATE students
+             SET semester = $1
+             WHERE id = ANY($2::int[])
+             RETURNING id, user_id, semester`,
+            [semester, studentIds]
+        );
+
+        if (!result.rows.length) {
+            return res.status(404).json({ error: 'No matching students found' });
+        }
+
+        return res.status(200).json({
+            message: 'Student semesters updated successfully',
+            updated_count: result.rowCount,
+            students: result.rows,
+        });
+    } catch (err) {
+        console.error('Bulk Update Student Semesters Error:', err);
+        return res.status(500).json({ error: 'Failed to update student semesters' });
+    }
+};
+
 exports.listProfessors = async (req, res) => {
     try {
         const result = await db.query(

@@ -106,9 +106,10 @@ exports.login = async (req, res) => {
     const email = req.body?.email?.trim();
     const password = req.body?.password;
     const deviceId = getDeviceId(req);
+    const forceLogin = Boolean(req.body?.force_login);
 
     try {
-        console.log('[login] attempt', { email });
+        console.log('[login] attempt', { email, forceLogin });
         if (!email || !password) {
             console.log('[login] missing_fields', { emailPresent: Boolean(email), passwordPresent: Boolean(password) });
             return res.status(400).json({ error: 'Email and password are required' });
@@ -155,10 +156,22 @@ exports.login = async (req, res) => {
             const activeSession = activeSessionRes.rows[0];
 
             if (activeSession && activeSession.device_id !== deviceId) {
-                await client.query('ROLLBACK');
-                return res.status(409).json({
-                    error: 'This account is already signed in on another device. Please log out there first.'
-                });
+                if (!forceLogin) {
+                    await client.query('ROLLBACK');
+                    return res.status(409).json({
+                        code: 'SESSION_CONFLICT',
+                        error: 'This account is already signed in on another device. Please log out there first.'
+                    });
+                }
+
+                await client.query(
+                    `UPDATE user_sessions
+                     SET is_active = FALSE, revoked_at = CURRENT_TIMESTAMP
+                     WHERE user_id = $1
+                       AND is_active = TRUE
+                       AND revoked_at IS NULL`,
+                    [user.id]
+                );
             }
 
             await client.query(

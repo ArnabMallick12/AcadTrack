@@ -5,6 +5,8 @@ const authMiddleware = require('../middlewares/auth');
 
 router.post('/users', authMiddleware(['admin']), adminController.createUser);
 router.get('/users', authMiddleware(['admin']), adminController.listUsers);
+router.patch('/students/semester', authMiddleware(['admin']), adminController.bulkUpdateStudentSemesters);
+router.patch('/students/:studentId/semester', authMiddleware(['admin']), adminController.updateStudentSemester);
 router.get('/professors', authMiddleware(['admin']), adminController.listProfessors);
 router.post('/semesters', authMiddleware(['admin']), adminController.createSemester);
 router.get('/semesters', authMiddleware(['admin']), adminController.listSemesters);

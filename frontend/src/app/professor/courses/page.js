@@ -95,7 +95,7 @@ export default function ProfessorCourses() {
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
             {/* Header */}
             <header className="border-b border-slate-700/50 backdrop-blur-sm bg-slate-900/50 sticky top-0 z-10">
-                <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+                <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
                             <Layers size={20} className="text-white" />
@@ -105,7 +105,7 @@ export default function ProfessorCourses() {
                             <p className="text-xs text-slate-400">Professor Portal</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                         <span className="text-sm text-slate-300 hidden sm:block">Welcome, <span className="font-semibold text-white">{user.name}</span></span>
                         <button
                             onClick={handleLogout}
@@ -119,10 +119,10 @@ export default function ProfessorCourses() {
             </header>
 
             {/* Main Content */}
-            <main className="max-w-6xl mx-auto px-6 py-10">
+            <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
                 {/* Title Section */}
                 <div className="mb-10">
-                    <h2 className="text-3xl font-bold text-white mb-2">My Courses</h2>
+                    <h2 className="mb-2 text-2xl font-bold text-white sm:text-3xl">My Courses</h2>
                     <p className="text-slate-400">Select a course to manage, or create a new one.</p>
                 </div>
 
@@ -198,7 +198,7 @@ export default function ProfessorCourses() {
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
 
                     {/* Modal */}
-                    <div className="relative bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md p-0 animate-in zoom-in-95 duration-200">
+                    <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-slate-700 bg-slate-800 p-0 shadow-2xl animate-in zoom-in-95 duration-200">
                         {/* Modal Header */}
                         <div className="flex items-center justify-between p-6 border-b border-slate-700">
                             <div>
@@ -245,7 +245,7 @@ export default function ProfessorCourses() {
                                 />
                             </div>
 
-                            <div className="flex gap-3 pt-2">
+                            <div className="flex flex-col gap-3 pt-2 sm:flex-row">
                                 <button
                                     type="button"
                                     onClick={() => setShowModal(false)}

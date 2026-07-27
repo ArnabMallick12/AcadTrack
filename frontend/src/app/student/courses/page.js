@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookOpen, ArrowRight, Layers, LogOut, GraduationCap, ChevronDown, Filter, User } from 'lucide-react';
 import api from '@/lib/api';
-import { clearSession, getStoredToken, getStoredUser, setSelectedCourse } from '@/lib/auth';
+import { clearLocalSession, clearSession, getStoredUser, hasValidSession, setSelectedCourse } from '@/lib/auth';
 
 export default function StudentCourses() {
     const [user, setUser] = useState(null);
@@ -24,14 +24,13 @@ export default function StudentCourses() {
 
     useEffect(() => {
         const u = getStoredUser();
-        const token = getStoredToken();
         console.log('[student/courses] guard', {
             hasUser: Boolean(u),
-            hasToken: Boolean(token),
+            hasValidSession: hasValidSession(),
             path: typeof window !== 'undefined' ? window.location.pathname : 'server',
         });
-        if (!u || !token) {
-            clearSession();
+        if (!hasValidSession()) {
+            clearLocalSession();
             return router.push('/login');
         }
         const parsed = JSON.parse(u);
@@ -107,7 +106,7 @@ export default function StudentCourses() {
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
             {/* Header */}
             <header className="border-b border-slate-700/50 backdrop-blur-sm bg-slate-900/50 sticky top-0 z-10">
-                <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+                <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
                             <Layers size={20} className="text-white" />
@@ -117,7 +116,7 @@ export default function StudentCourses() {
                             <p className="text-xs text-slate-400">Student Portal</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                         <button
                             onClick={() => router.push('/student/registration')}
                             className="hidden sm:inline-flex items-center gap-2 px-3 py-2 text-sm text-emerald-300 hover:text-white hover:bg-slate-800 rounded-lg transition-all duration-200"
@@ -150,24 +149,24 @@ export default function StudentCourses() {
             </header>
 
             {/* Main Content */}
-            <main className="max-w-6xl mx-auto px-6 py-10">
+            <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
                 {/* Title Section */}
                 <div className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                     <div>
-                        <h2 className="text-3xl font-bold text-white mb-2">My Courses</h2>
+                        <h2 className="mb-2 text-2xl font-bold text-white sm:text-3xl">My Courses</h2>
                         <p className="text-slate-400">Select a course to view attendance, quizzes, marks and more, or complete semester registration before classes begin.</p>
                     </div>
 
                     {/* Semester Filter */}
                     {semesters.length > 0 && (
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex w-full items-center gap-2 sm:w-auto sm:shrink-0">
                             <Filter size={16} className="text-slate-400" />
-                            <div className="relative">
+                            <div className="relative flex-1 sm:flex-none">
                                 <select
                                     id="semester-filter"
                                     value={selectedSemester}
                                     onChange={(e) => setSelectedSemester(e.target.value)}
-                                    className="appearance-none bg-slate-800/80 border border-slate-600/50 text-white rounded-xl pl-4 pr-10 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 cursor-pointer transition-all duration-200 hover:bg-slate-700/80 min-w-[200px]"
+                                    className="w-full appearance-none rounded-xl border border-slate-600/50 bg-slate-800/80 py-2.5 pl-4 pr-10 text-sm font-medium text-white transition-all duration-200 hover:bg-slate-700/80 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 sm:min-w-[200px]"
                                 >
                                     <option value="all">All Semesters</option>
                                     {semesters.map((sem) => (
