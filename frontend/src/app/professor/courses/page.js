@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookOpen, PlusCircle, ArrowRight, X, Layers, LogOut } from 'lucide-react';
 import api from '@/lib/api';
-import { clearSession, getStoredToken, getStoredUser, setSelectedCourse } from '@/lib/auth';
+import { clearSession, getStoredUser, hasValidSession, setSelectedCourse } from '@/lib/auth';
 
 export default function ProfessorCourses() {
     const [user, setUser] = useState(null);
@@ -28,8 +28,7 @@ export default function ProfessorCourses() {
 
     useEffect(() => {
         const u = getStoredUser();
-        const token = getStoredToken();
-        if (!u || !token) {
+        if (!u || !hasValidSession()) {
             clearSession();
             return router.push('/login');
         }

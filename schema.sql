@@ -1,4 +1,4 @@
-﻿-- Schema.sql
+-- Schema.sql
 -- Run this script in your PostgreSQL database to create the tables.
 
 CREATE TABLE users (
@@ -25,6 +25,7 @@ CREATE TABLE user_sessions (
 CREATE INDEX idx_user_sessions_user_active
     ON user_sessions(user_id)
     WHERE is_active = TRUE;
+
 CREATE TABLE students (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
@@ -97,6 +98,24 @@ CREATE TABLE semester_registration_courses (
     UNIQUE(registration_id, subject_id)
 );
 
+CREATE TABLE attendance_signing_keys (
+    id UUID PRIMARY KEY,
+    user_session_id INT REFERENCES user_sessions(id) ON DELETE CASCADE,
+    student_id INT REFERENCES students(id) ON DELETE CASCADE,
+    key_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    revoked_at TIMESTAMP
+);
+
+CREATE TABLE attendance_nonces (
+    nonce VARCHAR(120) PRIMARY KEY,
+    user_session_id INT REFERENCES user_sessions(id) ON DELETE CASCADE,
+    student_id INT REFERENCES students(id) ON DELETE CASCADE,
+    action VARCHAR(30) NOT NULL,
+    packet_timestamp TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 CREATE TABLE attendance_sessions (
     id SERIAL PRIMARY KEY,
     student_id INT REFERENCES students(id),
@@ -162,7 +181,8 @@ CREATE TABLE attendance_records (
     student_id INT REFERENCES students(id),
     subject_id INT REFERENCES subjects(id),
     date DATE,
-    status VARCHAR(10) CHECK (status IN ('present', 'absent'))
+    status VARCHAR(10) CHECK (status IN ('present', 'absent')),
+    integrity_hash TEXT
 );
 
 CREATE TABLE quizzes (

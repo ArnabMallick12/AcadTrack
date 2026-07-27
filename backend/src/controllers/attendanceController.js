@@ -1,8 +1,18 @@
 const db = require('../config/db');
 const axios = require('axios');
 const cloudinaryService = require('../services/cloudinaryService');
+const {
+    buildAttendanceIntegrityHash,
+    issueAttendanceSigningKey,
+    verifyAttendancePacket,
+} = require('../services/attendanceSecurity');
 
 const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:5001';
+const PYTHON_SERVICE_API_KEY = process.env.PYTHON_SERVICE_API_KEY;
+
+function pythonServiceConfig() {
+    return PYTHON_SERVICE_API_KEY ? { headers: { 'X-API-Key': PYTHON_SERVICE_API_KEY } } : undefined;
+}
 
 // --- Helper Functions ---
 function haversineDistance(lat1, lon1, lat2, lon2) {
@@ -86,10 +96,8 @@ async function autoMarkAbsentsForSubjectDate(subject_id, dateStr) {
         return { marked: 0, skipped: true, reason: 'No scheduled/extra class on this date' };
     }
 
-    // Insert absents for enrolled students who do not already have attendance for that date.
-    const result = await db.query(
-        `INSERT INTO attendance_records (student_id, subject_id, date, status)
-         SELECT e.student_id, e.subject_id, $2::date, 'absent'
+    const missingRes = await db.query(
+        `SELECT e.student_id, e.subject_id
          FROM enrollments e
          WHERE e.subject_id = $1
            AND NOT EXISTS (
@@ -102,9 +110,22 @@ async function autoMarkAbsentsForSubjectDate(subject_id, dateStr) {
         [subject_id, dateStr]
     );
 
-    return { marked: result.rowCount || 0, skipped: false };
-}
+    for (const row of missingRes.rows) {
+        const integrityHash = buildAttendanceIntegrityHash({
+            studentId: row.student_id,
+            subjectId: row.subject_id,
+            date: dateStr,
+            status: 'absent',
+        });
+        await db.query(
+            `INSERT INTO attendance_records (student_id, subject_id, date, status, integrity_hash)
+             VALUES ($1, $2, $3::date, 'absent', $4)`,
+            [row.student_id, row.subject_id, dateStr, integrityHash]
+        );
+    }
 
+    return { marked: missingRes.rowCount || 0, skipped: false };
+}
 // --- Professor Endpoints ---
 exports.startLectureSession = async (req, res) => {
     const { subject_id, latitude, longitude } = req.body;
@@ -192,6 +213,16 @@ exports.completeLectureSession = async (req, res) => {
 };
 
 // --- Student Endpoints ---
+exports.getSigningKey = async (req, res) => {
+    try {
+        const key = await issueAttendanceSigningKey(db, req.user);
+        res.status(200).json(key);
+    } catch (err) {
+        console.error('Issue Attendance Signing Key Error:', err);
+        res.status(500).json({ error: 'Failed to issue attendance signing key' });
+    }
+};
+
 exports.registerFace = async (req, res) => {
     const { image_base64 } = req.body;
     const student_id = req.user.role_id;
@@ -238,6 +269,16 @@ exports.startSession = async (req, res) => {
     const student_id = req.user.role_id;
 
     try {
+        const signatureCheck = await verifyAttendancePacket(db, req, {
+            action: 'start',
+            sessionId: `subject:${subject_id}`,
+            latitude,
+            longitude,
+        });
+        if (!signatureCheck.ok) {
+            return res.status(signatureCheck.status).json({ error: signatureCheck.error });
+        }
+
         // 1. GPS Validation First
         const current_distance = await fetchCurrentDistance(subject_id, latitude, longitude);
         if (current_distance === null) {
@@ -292,6 +333,16 @@ exports.startSession = async (req, res) => {
 exports.pingSession = async (req, res) => {
     const { session_id, latitude, longitude } = req.body;
     try {
+        const signatureCheck = await verifyAttendancePacket(db, req, {
+            action: 'ping',
+            sessionId: session_id,
+            latitude,
+            longitude,
+        });
+        if (!signatureCheck.ok) {
+            return res.status(signatureCheck.status).json({ error: signatureCheck.error });
+        }
+
         await db.query(
             'INSERT INTO student_location_pings (attendance_session_id, latitude, longitude) VALUES ($1, $2, $3)',
             [session_id, latitude, longitude]
@@ -312,10 +363,20 @@ exports.pingSession = async (req, res) => {
 
 // Complete session & calculate total duration based on valid ping intervals
 exports.completeSession = async (req, res) => {
-    const { session_id } = req.body;
+    const { session_id, latitude, longitude } = req.body;
     const student_id = req.user.role_id;
 
     try {
+        const signatureCheck = await verifyAttendancePacket(db, req, {
+            action: 'complete',
+            sessionId: session_id,
+            latitude,
+            longitude,
+        });
+        if (!signatureCheck.ok) {
+            return res.status(signatureCheck.status).json({ error: signatureCheck.error });
+        }
+
         await db.query(
             'UPDATE attendance_sessions SET end_time = CURRENT_TIMESTAMP WHERE id = $1',
             [session_id]
@@ -433,17 +494,31 @@ exports.completeSession = async (req, res) => {
             [student_id, session.subject_id]
         );
 
+        const integrityHash = buildAttendanceIntegrityHash({
+            studentId: student_id,
+            subjectId: session.subject_id,
+            date: dateStr,
+            status,
+        });
+
         if (existing.rows.length === 0) {
             await db.query(
-                'INSERT INTO attendance_records (student_id, subject_id, date, status) VALUES ($1, $2, CURRENT_DATE, $3)',
-                [student_id, session.subject_id, status]
+                `INSERT INTO attendance_records (student_id, subject_id, date, status, integrity_hash)
+                 VALUES ($1, $2, CURRENT_DATE, $3, $4)`,
+                [student_id, session.subject_id, status, integrityHash]
             );
         } else {
             const currentStatus = existing.rows[0].status;
             if (currentStatus !== 'present' && status === 'present') {
+                const presentIntegrityHash = buildAttendanceIntegrityHash({
+                    studentId: student_id,
+                    subjectId: session.subject_id,
+                    date: dateStr,
+                    status: 'present',
+                });
                 await db.query(
-                    'UPDATE attendance_records SET status = $1 WHERE id = $2',
-                    ['present', existing.rows[0].id]
+                    'UPDATE attendance_records SET status = $1, integrity_hash = $2 WHERE id = $3',
+                    ['present', presentIntegrityHash, existing.rows[0].id]
                 );
             }
         }

@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 
@@ -22,7 +22,7 @@ function signAccessToken(user, sessionId) {
             token_type: 'access',
         },
         process.env.JWT_SECRET,
-        { expiresIn: ACCESS_TOKEN_EXPIRES_IN }
+        { expiresIn: ACCESS_TOKEN_EXPIRES_IN, algorithm: 'HS256' }
     );
 }
 
@@ -37,16 +37,19 @@ function signRefreshToken(user, sessionId) {
             jti: uuidv4(),
         },
         process.env.JWT_SECRET,
-        { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
+        { expiresIn: REFRESH_TOKEN_EXPIRES_IN, algorithm: 'HS256' }
     );
 }
 
-async function hashToken(token) {
-    return bcrypt.hash(token, 10);
+function hashToken(token) {
+    return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-async function compareToken(token, hash) {
-    return bcrypt.compare(token, hash);
+function compareToken(token, hash) {
+    const tokenHash = hashToken(token);
+    const left = Buffer.from(tokenHash, 'hex');
+    const right = Buffer.from(hash || '', 'hex');
+    return left.length === right.length && crypto.timingSafeEqual(left, right);
 }
 
 module.exports = {

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Layers, LogOut, User, Mail, Camera } from 'lucide-react';
 import api from '@/lib/api';
-import { clearSession, getStoredToken, getStoredUser } from '@/lib/auth';
+import { clearSession, getStoredUser, hasValidSession } from '@/lib/auth';
 import FaceRegistration from '@/components/FaceRegistration';
 
 export default function StudentProfilePage() {
@@ -27,9 +27,7 @@ export default function StudentProfilePage() {
 
     useEffect(() => {
         const user = getStoredUser();
-        const token = getStoredToken();
-
-        if (!user || !token) {
+        if (!user || !hasValidSession()) {
             clearSession();
             router.push('/login');
             return;

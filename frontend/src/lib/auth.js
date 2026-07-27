@@ -20,6 +20,56 @@ function safeLocalStorage() {
     }
 }
 
+function looksLikeJwt(value) {
+    return typeof value === 'string' && value.split('.').length === 3;
+}
+
+function scrubRawStoredTokenArtifacts() {
+    const storage = safeLocalStorage();
+    if (!storage) return;
+
+    [ACCESS_TOKEN_KEY, LEGACY_TOKEN_KEY, REFRESH_TOKEN_KEY].forEach((key) => {
+        const value = storage.getItem(key);
+        if (looksLikeJwt(value)) {
+            storage.removeItem(key);
+        }
+    });
+}
+
+async function sha256Hex(value) {
+    if (typeof crypto === 'undefined' || !crypto.subtle || typeof TextEncoder === 'undefined') {
+        return null;
+    }
+
+    const encoded = new TextEncoder().encode(value);
+    const digest = await crypto.subtle.digest('SHA-256', encoded);
+    return Array.from(new Uint8Array(digest))
+        .map((byte) => byte.toString(16).padStart(2, '0'))
+        .join('');
+}
+
+function storeTokenHashes(accessToken, refreshToken) {
+    const storage = safeLocalStorage();
+    if (!storage) return;
+
+    scrubRawStoredTokenArtifacts();
+
+    if (accessToken) {
+        sha256Hex(accessToken).then((hash) => {
+            if (!hash) return;
+            storage.setItem(ACCESS_TOKEN_KEY, hash);
+            storage.setItem(LEGACY_TOKEN_KEY, hash);
+        }).catch(() => {});
+    }
+
+    if (refreshToken) {
+        sha256Hex(refreshToken).then((hash) => {
+            if (!hash) return;
+            storage.setItem(REFRESH_TOKEN_KEY, hash);
+        }).catch(() => {});
+    }
+}
+
 function createDeviceId() {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
         return crypto.randomUUID();
@@ -40,19 +90,13 @@ export function getDeviceId() {
 }
 
 export function getStoredToken() {
-    const tokenFromCookie = Cookies.get(ACCESS_TOKEN_KEY) || Cookies.get(LEGACY_TOKEN_KEY);
-    if (tokenFromCookie) return tokenFromCookie;
-
-    const storage = safeLocalStorage();
-    return storage?.getItem(ACCESS_TOKEN_KEY) || storage?.getItem(LEGACY_TOKEN_KEY) || null;
+    scrubRawStoredTokenArtifacts();
+    return Cookies.get(ACCESS_TOKEN_KEY) || Cookies.get(LEGACY_TOKEN_KEY) || null;
 }
 
 export function getStoredRefreshToken() {
-    const tokenFromCookie = Cookies.get(REFRESH_TOKEN_KEY);
-    if (tokenFromCookie) return tokenFromCookie;
-
-    const storage = safeLocalStorage();
-    return storage?.getItem(REFRESH_TOKEN_KEY) || null;
+    scrubRawStoredTokenArtifacts();
+    return Cookies.get(REFRESH_TOKEN_KEY) || null;
 }
 
 export function getStoredUser() {
@@ -96,20 +140,14 @@ export function setSession(tokenOrTokens, user, maybeRefreshToken) {
     Cookies.set(USER_KEY, JSON.stringify(user), { expires: REFRESH_COOKIE_DAYS, path: '/' });
 
     const storage = safeLocalStorage();
-    if (accessToken) {
-        storage?.setItem(ACCESS_TOKEN_KEY, accessToken);
-        storage?.setItem(LEGACY_TOKEN_KEY, accessToken);
-    }
-    if (refreshToken) {
-        storage?.setItem(REFRESH_TOKEN_KEY, refreshToken);
-    }
+    storeTokenHashes(accessToken, refreshToken);
     storage?.setItem(USER_KEY, JSON.stringify(user));
 
     console.log('[auth] setSession:done', {
         cookieAccessToken: Boolean(Cookies.get(ACCESS_TOKEN_KEY)),
         cookieRefreshToken: Boolean(Cookies.get(REFRESH_TOKEN_KEY)),
-        localAccessToken: Boolean(storage?.getItem(ACCESS_TOKEN_KEY)),
-        localRefreshToken: Boolean(storage?.getItem(REFRESH_TOKEN_KEY)),
+        localAccessTokenHash: Boolean(storage?.getItem(ACCESS_TOKEN_KEY)),
+        localRefreshTokenHash: Boolean(storage?.getItem(REFRESH_TOKEN_KEY)),
     });
 }
 
@@ -155,7 +193,7 @@ export function clearLocalSession() {
 }
 
 export function hasValidSession() {
-    return Boolean(getStoredToken() && getStoredRefreshToken() && getStoredUser());
+    return Boolean(getStoredRefreshToken() && getStoredUser());
 }
 
 export function clearSession() {
