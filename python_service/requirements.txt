@@ -3,4 +3,4 @@ deepface==0.0.84
 opencv-python==4.11.0.86
 numpy==1.26.2
 requests==2.31.0
-tf-keras==2.15.0
+tensorflow-cpu==2.15.0
