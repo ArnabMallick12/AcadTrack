@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, ArrowRight, Layers, LogOut, GraduationCap, ChevronDown, Filter, User } from 'lucide-react';
+import { BookOpen, ArrowRight, Layers, LogOut, GraduationCap, ChevronDown, Filter, User, Menu, X } from 'lucide-react';
 import api from '@/lib/api';
 import { clearLocalSession, clearSession, getStoredUser, hasValidSession, setSelectedCourse } from '@/lib/auth';
 
@@ -12,6 +12,7 @@ export default function StudentCourses() {
     const [loading, setLoading] = useState(true);
     const [selectedSemester, setSelectedSemester] = useState('all');
     const router = useRouter();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const cardColors = [
         { bg: 'from-blue-500 to-indigo-600', light: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-blue-200', shadow: 'shadow-blue-500/10' },
@@ -106,45 +107,103 @@ export default function StudentCourses() {
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
             {/* Header */}
             <header className="border-b border-slate-700/50 backdrop-blur-sm bg-slate-900/50 sticky top-0 z-10">
-                <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                            <Layers size={20} className="text-white" />
+                <div className="mx-auto max-w-6xl px-4 sm:px-6">
+                    <div className="flex items-center justify-between py-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                                <Layers size={20} className="text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold text-white tracking-tight">AcadTrack</h1>
+                                <p className="text-xs text-slate-400">Student Portal</p>
+                            </div>
                         </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-white tracking-tight">AcadTrack</h1>
-                            <p className="text-xs text-slate-400">Student Portal</p>
+
+                        {/* Desktop Navigation */}
+                        <div className="hidden md:flex items-center gap-2 lg:gap-4">
+                            <button
+                                onClick={() => router.push('/student/registration')}
+                                className="inline-flex items-center gap-2 px-3 py-2 text-sm text-emerald-300 hover:text-white hover:bg-slate-800 rounded-lg transition-all duration-200"
+                            >
+                                Semester Registration
+                            </button>
+                            <button
+                                onClick={() => router.push('/student/gradesheets')}
+                                className="inline-flex items-center gap-2 px-3 py-2 text-sm text-blue-300 hover:text-white hover:bg-slate-800 rounded-lg transition-all duration-200"
+                            >
+                                Grade Sheets
+                            </button>
+                            <button
+                                onClick={() => router.push('/student/profile')}
+                                className="inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-all duration-200"
+                            >
+                                <User size={16} />
+                                My Account
+                            </button>
+                            <span className="text-sm text-slate-300">Welcome, <span className="font-semibold text-white">{user.name}</span></span>
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-all duration-200"
+                            >
+                                <LogOut size={16} />
+                                <span>Log Out</span>
+                            </button>
+                        </div>
+
+                        {/* Mobile Menu Button */}
+                        <div className="flex md:hidden items-center gap-3">
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center gap-2 px-2.5 py-1.5 text-sm text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-all duration-200"
+                                title="Log Out"
+                            >
+                                <LogOut size={16} />
+                            </button>
+                            <button
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className="text-slate-400 hover:text-white focus:outline-none p-1"
+                            >
+                                {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                            </button>
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-                        <button
-                            onClick={() => router.push('/student/registration')}
-                            className="hidden sm:inline-flex items-center gap-2 px-3 py-2 text-sm text-emerald-300 hover:text-white hover:bg-slate-800 rounded-lg transition-all duration-200"
-                        >
-                            Semester Registration
-                        </button>
-                        <button
-                            onClick={() => router.push('/student/gradesheets')}
-                            className="hidden sm:inline-flex items-center gap-2 px-3 py-2 text-sm text-blue-300 hover:text-white hover:bg-slate-800 rounded-lg transition-all duration-200"
-                        >
-                            Grade Sheets
-                        </button>
-                        <button
-                            onClick={() => router.push('/student/profile')}
-                            className="hidden sm:inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-all duration-200"
-                        >
-                            <User size={16} />
-                            My Account
-                        </button>
-                        <span className="text-sm text-slate-300 hidden sm:block">Welcome, <span className="font-semibold text-white">{user.name}</span></span>
-                        <button
-                            onClick={handleLogout}
-                            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-all duration-200"
-                        >
-                            <LogOut size={16} />
-                            <span className="hidden sm:inline">Log Out</span>
-                        </button>
-                    </div>
+
+                    {/* Mobile Navigation Dropdown */}
+                    {isMobileMenuOpen && (
+                        <div className="md:hidden pb-4 pt-2 border-t border-slate-800/80 space-y-2">
+                            <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                Welcome, {user.name}
+                            </div>
+                            <button
+                                onClick={() => {
+                                    router.push('/student/registration');
+                                    setIsMobileMenuOpen(false);
+                                }}
+                                className="flex w-full items-center gap-3 px-3 py-2.5 text-sm text-emerald-300 hover:text-white hover:bg-slate-800/50 rounded-xl transition-all duration-200"
+                            >
+                                Semester Registration
+                            </button>
+                            <button
+                                onClick={() => {
+                                    router.push('/student/gradesheets');
+                                    setIsMobileMenuOpen(false);
+                                }}
+                                className="flex w-full items-center gap-3 px-3 py-2.5 text-sm text-blue-300 hover:text-white hover:bg-slate-800/50 rounded-xl transition-all duration-200"
+                            >
+                                Grade Sheets
+                            </button>
+                            <button
+                                onClick={() => {
+                                    router.push('/student/profile');
+                                    setIsMobileMenuOpen(false);
+                                }}
+                                className="flex w-full items-center gap-3 px-3 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-xl transition-all duration-200"
+                            >
+                                <User size={16} />
+                                My Account
+                            </button>
+                        </div>
+                    )}
                 </div>
             </header>
 
