@@ -489,7 +489,7 @@ export default function AttendanceTracker({ subjectId }) {
                                     {distanceStr && (
                                         <div className="flex flex-col items-end pr-4 border-r border-gray-200">
                                             <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Distance</span>
-                                            <span className={`font-mono font-bold text-lg leading-tight ${distanceStr.includes('Awaiting') || distanceStr === 'nullm' ? 'text-amber-500' : parseInt(distanceStr) <= 30 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                            <span className={`font-mono font-bold text-lg leading-tight ${distanceStr.includes('Awaiting') || distanceStr === 'nullm' ? 'text-amber-500' : parseInt(distanceStr) <= 60 ? 'text-emerald-600' : 'text-red-500'}`}>
                                                 {distanceStr}
                                             </span>
                                         </div>

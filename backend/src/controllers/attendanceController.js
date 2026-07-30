@@ -284,8 +284,8 @@ exports.startSession = async (req, res) => {
         if (current_distance === null) {
             return res.status(400).json({ error: 'Professor has not started the session yet or location invalid.' });
         }
-        if (current_distance > 30) {
-            return res.status(403).json({ error: `You are too far from the professor (${Math.round(current_distance)}m). You must be within 30m.` });
+        if (current_distance > 60) {
+            return res.status(403).json({ error: `You are too far from the professor (${Math.round(current_distance)}m). You must be within 60m.` });
         }
 
         // 2. Biometric Verification
@@ -465,8 +465,8 @@ exports.completeSession = async (req, res) => {
                          closestProf.latitude, closestProf.longitude
                      );
 
-                     // Accumulate valid interval if within 30 meters
-                     if (distance <= 30) {
+                     // Accumulate valid interval if within 60 meters
+                     if (distance <= 60) {
                          validTimeSecs += intervalSecs;
                      }
 
