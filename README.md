@@ -2,7 +2,7 @@
 
 A complete, production-ready Academic ERP system built with Next.js, Express.js, PostgreSQL, and a Python Flask Microservice. Features robust role-based access control, High-Security Biometric (Facial Recognition) + Continuous GPS Geofencing Attendance, anti-cheat quizzes, grading analytics, and Cloudflare R2 assignment uploads with Jaccard Similarity plagiarism detection.
 
-## 🚀 Setup Instructions
+##  Setup Instructions
 
 ### Prerequisites
 - Node.js (v18+)
@@ -55,7 +55,7 @@ NEXT_PUBLIC_API_URL=http://localhost:5000
 
 ---
 
-## 📚 API Documentation
+## API Documentation
 
 ### Authentication (`/auth`)
 - **`POST /auth/register`** 
